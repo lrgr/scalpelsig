@@ -114,15 +114,15 @@ registerDoParallel(cores=3)
 par_fc_mtx <- function(mtx, debug=TRUE) {
 	#ret = matrix(nrow=nrow(df), ncol=ncol(df))
 
-	ret <- foreach (i = 1:ncol(df), .combine=cbind) %dopar% {
+	ret <- foreach (i = 1:ncol(mtx), .combine=cbind) %dopar% {
 		#if (debug) { print_loop_progress(i, ncol(df)) }	
-		expected = expected_window_score(df, i)
-		fold_change_vec = df[ , i] / expected
+		expected = expected_window_score(mtx, i)
+		fold_change_vec = mtx[ , i] / expected
 		fold_change_vec
 	}
 	
-	rownames(ret) = rownames(df)
-	colnames(ret) = colnames(df)
+	rownames(ret) = rownames(mtx)
+	colnames(ret) = colnames(mtx)
 	
 	return(ret)
 }
@@ -148,6 +148,18 @@ report_top_windows <- function(fold_change_df, n=5) {
 #########################################################################
 
 save_10k_fc_mtxs <- function() {
-	
+	chr_vec = c(1:22, "X", "Y")
+	for (chr in chr_vec) {
+		print(paste0("loading mutwindow_chr_10k for chromosome: ", chr))
+		mutwindow_mtx = load_nz_mutwindow_chr_10k(chr)
+		
+		print(paste0("running par_fc_mtx for chromosome: ", chr))
+		ret = par_fc_mtx(mutwindow_mtx)
+
+		filename = paste0("~/projects/hotspot_signature_panel/data/individual_chromosome_matrices/fc_mtx_mutwindow_10k_chr_", chr, ".tsv")
+		print(paste0("writing table for chromosome: ", chr))
+		print(paste0("filename: ", filename))
+		write.table(ret, file=filename, sep="\t", quote=FALSE)
+	}
 }
 
