@@ -1,18 +1,23 @@
 # script for statistical analysis of regional signature probabilities
 
+
+GLOBAL_DATA_DIR = "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/signature-panel/data/"
+GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
+GLOBAL_NCORES = 35
+
 #####################
 # load data         #
 #####################
 
 load_nz_aggregated_window_sigprob <- function() {
-	df = read.csv("~/projects/hotspot_signature_panel/data/nz_aggregated_window_sigprob.tsv",
-		      sep = "\t", header=TRUE)
+	filename = paste0(GLOBAL_DATA_DIR, "nz_aggregated_window_sigprob.tsv")
+	df = read.csv(filename, sep = "\t", header=TRUE)
 	return(df)
 }
 
 
 load_nz_mutwindow_chr_10k <- function(chr) {
-	filename = paste0("~/projects/hotspot_signature_panel/data/individual_chromosome_matrices/nz_mutwindow_10000_sigprob_chr_", chr, ".tsv")
+	filename = paste0(GLOBAL_CHR_MTX_DIR, "nz_mutwindow_10000_sigprob_chr_", chr, ".tsv")
 	
 	df = data.table::fread(file=filename, header=FALSE)
 	sigs = df[[1]]
@@ -25,6 +30,19 @@ load_nz_mutwindow_chr_10k <- function(chr) {
 	return(mtx)
 }
 
+load_nz_mutwindow_chr_100k <- function(chr) {
+	filename = paste0(GLOBAL_CHR_MTX_DIR, "nz_mutwindow_1e+05_sigprob_chr_", chr, ".tsv")
+
+	df = data.table::fread(file=filename, header=FALSE)
+	sigs = df[[1]]
+	regions = scan(file=filename, what=character(), nlines=1)
+
+	mtx = as.matrix(df[ , -1]) # cut off column containing signature names
+	rownames(mtx) = sigs
+	colnames(mtx) = regions
+	
+	return(mtx)	
+}
 
 
 # fread from library(data.table) works for reading but it's over 3 million rows and it crashes when you attempt access of entries
@@ -97,10 +115,8 @@ fold_change_mtx <- function(df, debug=TRUE) {
 	colnames(ret) = colnames(df)
 
 	for (i in 1:ncol(df)) {
-		if (debug) { print_loop_progress(i, ncol(df)) }
-	       	#print("hello")	
+		if (debug) { print_loop_progress(i, ncol(df)) }	
 		expected = expected_window_score(df, i)
-		#print("goodbye")
 		fold_change_vec = df[ , i] / expected
 		ret[ , i] = fold_change_vec
 	}
@@ -109,7 +125,7 @@ fold_change_mtx <- function(df, debug=TRUE) {
 
 # same as above function but computes sums row-wise, which maybe should optimize
 library(doParallel)
-registerDoParallel(cores=3)
+registerDoParallel(cores=GLOBAL_NCORES)
 
 par_fc_mtx <- function(mtx, debug=TRUE) {
 	#ret = matrix(nrow=nrow(df), ncol=ncol(df))
@@ -156,10 +172,25 @@ save_10k_fc_mtxs <- function() {
 		print(paste0("running par_fc_mtx for chromosome: ", chr))
 		ret = par_fc_mtx(mutwindow_mtx)
 
-		filename = paste0("~/projects/hotspot_signature_panel/data/individual_chromosome_matrices/fc_mtx_mutwindow_10k_chr_", chr, ".tsv")
+		filename = paste0(GLOBAL_CHR_MTX_DIR, "fc_mtx_mutwindow_10k_chr_", chr, ".tsv")
 		print(paste0("writing table for chromosome: ", chr))
 		print(paste0("filename: ", filename))
 		write.table(ret, file=filename, sep="\t", quote=FALSE)
 	}
 }
 
+save_100k_fc_mtxs <- function() {
+	chr_vec = c(1:22, "X", "Y")
+	for (chr in chr_vec) {
+		print(paste0("loading mutwindow_chr_100k for chromosome: ", chr))
+		mutwindow_mtx = load_nz_mutwindow_chr_100k(chr)
+		
+		print(paste0("running par_fc_mtx for chromosome: ", chr))
+		ret = par_fc_mtx(mutwindow_mtx)
+
+		filename = paste0(GLOBAL_CHR_MTX_DIR, "fc_mtx_mutwindow_100k_chr_", chr, ".tsv")
+		print(paste0("writing table for chromosome: ", chr))
+		print(paste0("filename: ", filename))
+		write.table(ret, file=filename, sep="\t", quote=FALSE)
+	}
+}

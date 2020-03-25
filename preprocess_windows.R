@@ -1,5 +1,8 @@
 # process list of mutations into windowed mutation counts
 
+GLOBAL_DATA_DIR = "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/signature-panel/data/"
+GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
+GLOBAL_NCORES = 35
 
 
 ##################
@@ -15,13 +18,15 @@ load_nz_mutation_df <- function() {
 }
 
 load_nz_mut_df_with_sigprob <- function() {
-	df = read.csv(file="~/projects/hotspot_signature_panel/data/nz_mut_df_with_sig_prob.tsv",
+	filename = paste0(GLOBAL_DATA_DIR, "nz_mut_df_with_sig_prob.tsv")
+	df = read.csv(file=filename,
 		      sep="\t", header=TRUE)
 	return(df)
 }
 
 load_nz_sig_estimates <- function(norm=FALSE) {
-	df = read.csv(file="~/projects/hotspot_signature_panel/data/nz_signature_estimation.tsv",
+	filename = paste0(GLOBAL_DATA_DIR, "nz_signature_estimation.tsv")
+	df = read.csv(file=filename,
 		      sep="\t", header=TRUE)
 	colnames(df)[1] = "Patient"
 	
