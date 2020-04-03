@@ -568,6 +568,12 @@ corr_plot <- function(signature, panel_df, outfile, normalize_sigscore=TRUE, nor
 
 
 
+# possible modifications of OBJ:
+# take sqrt of alpha to dissuade overfitting to samples with many mutations
+# (or possibly a piecewise function where f(x) = x if x < 1, sqrt(x) o/w
+
+# use a scaling factor to mitigate class imbalance (i.e. multiply the second term by |positive samples| / |negative samples|)
+
 
 
 
