@@ -63,9 +63,11 @@ save_panel_sbs_tsv <- function(sbs_df, outfile) {
 
 # randomly sample WINDOWS_IN_PANEL mutwindows from the genome
 # put all the mutations 
-main <- function(WINDOWS_IN_PANEL, NUM_PANELS, OUTPREFIX, START_INDEX=1, mut_df=NULL, verbose=1) {
+main <- function(WINDOWS_IN_PANEL, NUM_PANELS, OUTPREFIX, WIN_MODE="100k", START_INDEX=1, mut_df=NULL, verbose=1) {
 	registerDoParallel(cores=GLOBAL_NCORES)
-	SBS_OUTPREFIX = paste0(OUTPREFIX, "SBS_MATRICES/random_panel_ALLSAMPLE_sbs_m100k_n", WINDOWS_IN_PANEL, "_iter_")
+
+	if ((WIN_MODE != "100k") & (WIN_MODE != "10k")) { stop(paste0("WIN_MODE argument of main() was set to ", WIN_MODE, " but it can only be '100k' or '10k' ")) }
+	SBS_OUTPREFIX = paste0(OUTPREFIX, "SBS_MATRICES/random_panel_ALLSAMPLE_sbs_m", WIN_MODE, "_n", WINDOWS_IN_PANEL, "_iter_")
 
 	if (is.null(mut_df)) {
 		if (verbose) { print("loading mut_df") }
@@ -73,9 +75,9 @@ main <- function(WINDOWS_IN_PANEL, NUM_PANELS, OUTPREFIX, START_INDEX=1, mut_df=
 	}
 
 	if (verbose) { print("loading all window names") }
-	possible_windows = get_all_mutwindows(mode="100k")
+	possible_windows = get_all_mutwindows(mode=WIN_MODE)
 
-	foreach (i = START_INDEX:(NUM_PANELS+START_INDEX)) %dopar% {
+	ret_ls <- foreach (i = START_INDEX:(NUM_PANELS+START_INDEX)) %dopar% {
 		if (verbose>=1) { print(paste0("Starting random panel ", i, "/", NUM_PANELS)) }
 
 		if (verbose>=2) { print(paste0("randomly selecting ", WINDOWS_IN_PANEL, " windows")) }
@@ -86,11 +88,17 @@ main <- function(WINDOWS_IN_PANEL, NUM_PANELS, OUTPREFIX, START_INDEX=1, mut_df=
 		
 		sbs_outfile = paste0(SBS_OUTPREFIX, i, ".tsv")
 		if (verbose>=2) { print(paste0("saving SBS matrix to ", sbs_outfile)) }
-		panel_sbs = sbs_df_from_mut_df(panel_df)	
-		save_panel_sbs_tsv(panel_sbs, sbs_outfile)
+		panel_sbs = sbs_df_from_mut_df(panel_df)
+		panel_sbs
 	}
+
+	for (i in 1:length(ret_ls) ) {
+		panel_sbs_df = ret_ls[[i]]
+		sbs_outfile = paste0(SBS_OUTPREFIX, i+START_INDEX, ".tsv")
+		save_panel_sbs_tsv(panel_sbs_df, sbs_outfile)i
+	}	
 }
 
-GLOBAL_BASELINE_PANEL_DIR = paste0(GLOBAL_DATA_DIR, "BASELINE_PANELS/")
+#GLOBAL_BASELINE_PANEL_DIR = paste0(GLOBAL_DATA_DIR, "BASELINE_PANELS/")
 
 #main(27, 1000, GLOBAL_BASELINE_PANEL_DIR, verbose=1)
