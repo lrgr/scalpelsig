@@ -12,6 +12,10 @@ GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
 
 GLOBAL_NCORES = 3
 
+source("GLOBAL_CONFIG.R")
+
+
+
 # get all region strings
 get_all_mutwindows <- function(mode) {
 	chrom_vec = c(1:22, "X", "Y")

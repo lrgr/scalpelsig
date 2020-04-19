@@ -11,6 +11,8 @@ GLOBAL_PANEL_SIG_EST_DIR = paste0(GLOBAL_PANEL_DIR, "SIGNATURE_ESTIMATES/")
 GLOBAL_LOGFILE_DIR = paste0(GLOBAL_OUT_DIR, "LOG_FILES/")
 
 
+source("GLOBAL_CONFIG.R")
+
 # given a training set, find windows of the genome which maximize this objective function:
 
 # SUM_(over active samples) alpha_r    -    SUM_(over inactive samples) alpha_r
@@ -87,6 +89,9 @@ get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size=10^6, debug=TRU
 
 	arr = array(dim=c(n_samp, n_window, n_categories), dimnames=name_ls)
 
+
+	if (debug) {print(paste0(Sys.time(), "    Starting main loop"))}
+
 	for (s in 1:n_samp) {
 		if (debug & (s==1 | s==2 | s==3 | s %% 50 == 0)) {
 			print(paste0(s, "/", n_samp))
@@ -102,6 +107,8 @@ get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size=10^6, debug=TRU
 		}
 	}
 
+
+	if (debug) {print(paste0(Sys.time(), "    finished"))}	
 	return(arr)
 }
 
@@ -128,8 +135,10 @@ parallel_get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size, debug
 	#arr = array(dim=c(n_samp, n_window, n_categories), dimnames=name_ls)
 	
 	acomb <- function(...) abind(..., along=3)
+	if (debug) {print(paste0(Sys.time(), "    Starting main loop"))}
 
-	arr <- foreach (s=1:n_samp, .combine='acomb', .multicombine=TRUE) %do% {
+	arr <- foreach (s=1:n_samp, .combine='acomb', .multicombine=TRUE) %dopar% {
+		curr_samp = samp_names[s]
 		if (debug & (s==1 | s==2 | s==3 | s %% 50 == 0)) {
 			print(paste0(s, "/", n_samp))
 		}
@@ -142,7 +151,8 @@ parallel_get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size, debug
 		#samp_arr = array(dim=c(1, n_window, n_categories), dimnames=samp_name_ls)
 		samp_df = chrom_df[chrom_df$Patient == curr_samp,]
 		
-		samp_window_sbs_mtx <- foreach(w=1:n_window, .combine=rbind) %dopar% {
+
+		samp_window_sbs_mtx <- foreach(w=1:n_window, .combine=rbind) %do% {
 			curr_window = windows[[w]]
 			curr_window_name = win_names[w]
 			get_96sbs_vec(samp_df, curr_window)
@@ -154,6 +164,7 @@ parallel_get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size, debug
 	arr = aperm(arr, c(3,1,2)) # rearrange array so that samples are in first dimension
 	dimnames(arr)[[1]] <- samp_names
 
+	if (debug) {print(paste0(Sys.time(), "    finished")) }
 	return(arr)
 }
 

@@ -13,6 +13,10 @@ GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
 GLOBAL_NCORES = 3 
 
 
+source("GLOBAL_CONFIG.R")
+
+
+
 ##################
 # loading data   #
 ##################

@@ -24,6 +24,8 @@ GLOBAL_PANEL_DIR = paste0(GLOBAL_OUT_DIR, "SIGNATURE_PANELS/")
 GLOBAL_PANEL_SBS_DIR = paste0(GLOBAL_PANEL_DIR, "SBS_MATRICES/")
 
 
+source("GLOBAL_CONFIG.R")
+
 
 #####################
 # load data         #
