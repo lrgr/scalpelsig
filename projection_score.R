@@ -13,6 +13,9 @@ GLOBAL_LOGFILE_DIR = paste0(GLOBAL_OUT_DIR, "LOG_FILES/")
 
 source("GLOBAL_CONFIG.R")
 
+registerDoParallel(cores=GLOBAL_NCORES)
+
+
 # given a training set, find windows of the genome which maximize this objective function:
 
 # SUM_(over active samples) alpha_r    -    SUM_(over inactive samples) alpha_r
@@ -214,6 +217,24 @@ save_96sbs_arrays <- function(win_size=10^5, mut_df=NULL, debug=TRUE) {
 		saveRDS(sbs_arr, filename)
 	}
 }
+
+
+parallel_save_96sbs_arrays <- function(win_size=10^5, mut_df=NULL, debug=TRUE) {
+	if (is.null(mut_df)) {
+		mut_df = load_nz_mutation_df()
+	}
+	
+	chrom_vec = c(1:22, "X", "Y")
+
+	for (chrom in chrom_vec) {
+		if (debug) { print(paste0("Starting get_sbs_counts_chrom_windows() for chromosome ", chrom)) }
+		sbs_arr = parallel_get_sbs_counts_chrom_windows(mut_df, chrom, win_size=win_size) 
+		filename = paste0(GLOBAL_CHR_MTX_DIR, "samp_window_sbs_array_winsize", win_size, "_chr", chrom, ".rds") 
+		if (debug) { print(paste0("Saving sbs_array at: ", filename)) }
+		saveRDS(sbs_arr, filename)
+	}
+}
+
 
 
 
