@@ -6,6 +6,8 @@ Download signature estimation repo
 
 Process `ICGC-BRCA-EU.RELEASE_22.SBS.renamed.tsv` into mutation count matrix using `save_sbs_tsv()` in `preprocess_windows.R`
 Estimate signatures using signature estimation tool
+- `conda activate signature-estimation-py-env`
+- `python signature-estimation-py/signature_estimation.py -mf MUTATION_COUNTS_FILE -sf SIGNATURES_FILE -of OUTPUT_FILE`
 
 Use `sig_est_with_window_tsv()` in `preprocess_windows.R` to obtain a data frame with signature estimates and windowed mutation counts for each sample.
 This file is saved in `data/nz_sig_est_and_window_counts.tsv`

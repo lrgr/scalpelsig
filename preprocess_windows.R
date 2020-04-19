@@ -1,8 +1,16 @@
 # process list of mutations into windowed mutation counts
 
-GLOBAL_DATA_DIR = "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/signature-panel/data/"
+
+# if laptop: "~/projects/hotspot_signature_panel/data/"
+# if workstation: "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/signature-panel/data/"
+
+GLOBAL_DATA_DIR = "~/projects/hotspot_signature_panel/data/"
 GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
-GLOBAL_NCORES = 35
+
+# if laptop: 3
+# if workstation: 35
+
+GLOBAL_NCORES = 3 
 
 
 ##################

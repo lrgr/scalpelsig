@@ -1,15 +1,29 @@
 # script for statistical analysis of regional signature probabilities
 
-# if laptop: "~/projects/hotspot_signature_panel/data/"
-# if workstation: "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/signature-panel/data/"
+source("preprocess_windows.R")
 
-GLOBAL_DATA_DIR = "~/projects/hotspot_signature_panel/data/"
-GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
+
+# if laptop: "~/projects/hotspot_signature_panel/"
+# if workstation: "/fs/cbcb-lab/mdml/users/franzese_projects/signature-panel/signature-panel/"
+
+GLOBAL_PROJECT_DIR = "~/projects/hotspot_signature_panel/"
 
 # if laptop: 3
 # if workstation: 35
 
 GLOBAL_NCORES = 3
+
+
+
+GLOBAL_DATA_DIR = paste0(GLOBAL_PROJECT_DIR, "data/")
+GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
+
+
+GLOBAL_OUT_DIR = paste0(GLOBAL_PROJECT_DIR, "out/")
+GLOBAL_PANEL_DIR = paste0(GLOBAL_OUT_DIR, "SIGNATURE_PANELS/")
+GLOBAL_PANEL_SBS_DIR = paste0(GLOBAL_PANEL_DIR, "SBS_MATRICES/")
+
+
 
 #####################
 # load data         #
@@ -548,7 +562,7 @@ corr_plot <- function(signature, panel_df, outfile, normalize_sigscore=TRUE, nor
 # NOTE: maybe we should use laplace smoothing or something.
 # to compute alpha, use the following:
 
-# alpha = t * cos(theta)
+# alpha = ||t|| * cos(theta)
 # (where theta is the angle between t and s)
 
 # or equivalently 
@@ -694,6 +708,25 @@ get_panel_df_100k <- function(signature, n=50, mut_df=NULL, debug=TRUE) {
 	if (debug) { print("running select_window_muts()") }
 	panel_df = select_window_muts(names(panel_windows), mut_df)
 	return(panel_df)
+}
+
+save_panel_sbs_100k <- function(signature, n=27, mut_df=NULL, outfile=NULL, debug=TRUE) {
+	p_df = get_panel_df_100k(signature, n, mut_df, debug)
+
+	if (is.null(outfile)) {
+		outfile = paste0(GLOBAL_PANEL_SBS_DIR, "fc_panel_sig_", signature, "_m100k_n", n, "_sbs_mtx.tsv")
+	}
+
+	write.table(sbs_df_from_mut_df(p_df), file=outfile, sep="\t", quote=FALSE)
+}
+
+save_allsig_panel_sbs_100k <- function(n=27, mut_df=NULL, debug=TRUE) {
+	if (is.null(mut_df)) {
+		mut_df = load_nz_mut_df_with_sigprob()
+	}
+	for (i in 1:30) {
+		save_panel_sbs_100k(i, n, mut_df, debug=debug)
+	}
 }
 
 get_all_sig_panels_100k <- function(n=50, mut_df=NULL, fc_ls=NULL, debug=TRUE) {

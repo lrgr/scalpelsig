@@ -82,11 +82,11 @@ main <- function(WINDOWS_IN_PANEL, NUM_PANELS, OUTPREFIX, START_INDEX=1, mut_df=
 		
 		sbs_outfile = paste0(SBS_OUTPREFIX, i, ".tsv")
 		if (verbose>=2) { print(paste0("saving SBS matrix to ", sbs_outfile)) }
-		panel_sbs = sbs_df_from_mut_df(panel_df)
+		panel_sbs = sbs_df_from_mut_df(panel_df)	
 		save_panel_sbs_tsv(panel_sbs, sbs_outfile)
 	}
 }
 
 GLOBAL_BASELINE_PANEL_DIR = paste0(GLOBAL_DATA_DIR, "BASELINE_PANELS/")
 
-main(27, 1000, GLOBAL_BASELINE_PANEL_DIR, verbose=1)
+#main(27, 1000, GLOBAL_BASELINE_PANEL_DIR, verbose=1)
