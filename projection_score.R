@@ -151,14 +151,20 @@ parallel_get_sbs_counts_chrom_windows <- function(mut_df, chrom, win_size, debug
 		#samp_arr = array(dim=c(1, n_window, n_categories), dimnames=samp_name_ls)
 		samp_df = chrom_df[chrom_df$Patient == curr_samp,]
 		
-
-		samp_window_sbs_mtx <- foreach(w=1:n_window, .combine=rbind) %do% {
+		samp_window_sbs_mtx = matrix(nrow=n_window, ncol=n_categories)
+		#samp_window_sbs_mtx <- foreach(w=1:n_window, .combine=rbind) %do% {
+		#	curr_window = windows[[w]]
+		#	curr_window_name = win_names[w]
+		#	get_96sbs_vec(samp_df, curr_window)
+		#	#arr[curr_samp, curr_window_name, ] = get_96sbs_vec(samp_df, curr_window)
+		#}
+		for (w in 1:n_window) {
 			curr_window = windows[[w]]
 			curr_window_name = win_names[w]
-			get_96sbs_vec(samp_df, curr_window)
-			#arr[curr_samp, curr_window_name, ] = get_96sbs_vec(samp_df, curr_window)
+			samp_window_sbs_mtx[w, ] = get_96sbs_vec(samp_df, curr_window)
 		}
 		rownames(samp_window_sbs_mtx) = win_names
+		colnames(samp_window_sbs_mtx) = mut_types()
 		samp_window_sbs_mtx
 	}
 	arr = aperm(arr, c(3,1,2)) # rearrange array so that samples are in first dimension
