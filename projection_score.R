@@ -1,5 +1,7 @@
 # this will implement the projection score idea
 
+library(abind)
+
 source("preprocess_windows.R")
 source("assess_panel.R")
 
@@ -47,11 +49,27 @@ load_sbs_array <- function(chrom, win_size=10^5) {
 
 
 # load outputs of 1b & c)
-load_ps_score_mtx_ls <- function(sig_num) {
-	return(readRDS(paste0(GLOBAL_CHR_MTX_DIR,  "projection_score_mtx_ls_sig", sig_num, ".rds")) )
+# old
+load_ps_score_mtx_ls <- function(sig_num, mode="100k") {
+	if ((mode != "100k") & (mode != "10k")) {
+		stop("Bad mode argument given to load_ps_score_mtx_ls(). Should be \"100k\" or \"10k\"")
+	}
+
+	if (mode=="100k") {
+		return(load_100k_ps_score_mtx_ls(sig_num))
+	}
+	if (mode=="10k") {
+		return(load_10k_ps_score_mtx_ls(sig_num))
+	}
 }
 
+load_10k_ps_score_mtx_ls <- function(sig_num) {
+	return(readRDS(paste0(GLOBAL_CHR_MTX_DIR, "10k_proj_scores/projection_score_mtx_ls_sig", sig_num, ".rds")))
+}
 
+load_100k_ps_score_mtx_ls <- function(sig_num) {
+	return(readRDS(paste0(GLOBAL_CHR_MTX_DIR, "100k_proj_scores/projection_score_mtx_ls_sig", sig_num, ".rds")))
+}
 
 #############################################
 # quicker way to convert panel to sbs tsv   #

@@ -26,6 +26,7 @@ source("GLOBAL_CONFIG.R")
 # load data          #
 ######################
 
+# TODO: documentation - what script creates these files?
 load_sig_estimate_df <- function(filename, norm=FALSE) {
         df = read.csv(file=filename, sep="\t", header=TRUE)
 	colnames(df)[1] = "Patient"
@@ -38,6 +39,23 @@ load_sig_estimate_df <- function(filename, norm=FALSE) {
 	return(df)
 }
 
+
+
+load_logged_test_sets <- function(sig_num) {
+	sig_keyword = paste0("_sig", sig_num, "_")
+	f_ls = list.files(GLOBAL_LOGFILE_DIR, pattern=sig_keyword)
+	
+	ret = list()
+	i = 1
+	for (f in f_ls) {
+		test_train = readRDS(paste0(GLOBAL_LOGFILE_DIR, f))
+		test_set = test_train[[1]]
+		ret[[i]] = test_set
+		i = i + 1
+	}
+	
+	return(ret)
+}
 
 
 
@@ -86,6 +104,9 @@ get_sig_activity_labels <- function(sig_num, global_sig_df, thresh=0.05) {
 }
 
 
+# sig_num : integer for which COSMIC signature to assess
+# test_set : vector of sample names
+# infile : file name (with path) for signature estimate .tsv corresponding to the panel
 compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
@@ -101,6 +122,22 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score)) ) )
 }
 
+panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=NULL, debug=TRUE) {
+	test_set_ls = load_logged_test_sets(sig_num)
+	if (debug) { print(paste0("Loaded ", length(test_set_ls), " logged test sets for signature ", sig_num)) }
+
+	auroc_vec = numeric(length(test_set_ls))
+	for (i in 1:length(test_set_ls)) {
+		auroc_vec[i] = compute_panel_auroc(sig_num, test_set_ls[[i]], sig_est_infile, global_sig_df)
+	}
+
+	if (debug) {
+		print(paste0("median auroc: ", median(auroc_vec)))
+		print(paste0("min : ", min(auroc_vec)))
+		print(paste0("max : ", max(auroc_vec)))
+	}
+	return(auroc_vec)
+}
 
 # get auroc for each baseline panel
 compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
@@ -143,7 +180,7 @@ main <- function() {
 
 	baseline_aucs = compute_baseline_auroc(2, test_set, global_sig_df)
 
-	
+	return(baseline_aucs)	
 
 	# extract panel scores for test set
 	#panel_score_df = get_panel_score_df(2, panel_sig_df, test_set)

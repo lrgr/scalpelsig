@@ -172,6 +172,9 @@ sbs_df_from_mut_df <- function(df, debug=FALSE) {
 	return(as.data.frame(sbs_mtx))
 }
 
+# given a [<n_patient>, <n_windows>, 96] array of SBS per patient per window,
+# want to make a 
+#sbs_df_from_window_array <- function(
 
 
 #### helper functions for window_df_from_mut_df() ####
