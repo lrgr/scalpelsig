@@ -1,5 +1,7 @@
 # this will implement the projection score idea
 
+library(abind)
+
 source("preprocess_windows.R")
 source("assess_panel.R")
 
@@ -50,7 +52,6 @@ load_sbs_array <- function(chrom, win_size=10^5) {
 load_ps_score_mtx_ls <- function(sig_num) {
 	return(readRDS(paste0(GLOBAL_CHR_MTX_DIR,  "projection_score_mtx_ls_sig", sig_num, ".rds")) )
 }
-
 
 
 #############################################
@@ -219,12 +220,16 @@ save_96sbs_arrays <- function(win_size=10^5, mut_df=NULL, debug=TRUE) {
 }
 
 
-parallel_save_96sbs_arrays <- function(win_size=10^5, mut_df=NULL, debug=TRUE) {
+parallel_save_96sbs_arrays <- function(win_size=10^5, mut_df=NULL, start_at=NULL, debug=TRUE) {
 	if (is.null(mut_df)) {
 		mut_df = load_nz_mutation_df()
 	}
 	
 	chrom_vec = c(1:22, "X", "Y")
+	
+	if (!is.null(start_at)) { 
+		chrom_vec = chrom_vec[start_at:length(chrom_vec)]
+	}
 
 	for (chrom in chrom_vec) {
 		if (debug) { print(paste0("Starting get_sbs_counts_chrom_windows() for chromosome ", chrom)) }
@@ -322,13 +327,16 @@ projection_scores_by_sig <- function(sig_vec, win_size=10^5, debug=TRUE) {
 	return(score_mtx_ls)
 }
 
-save_projection_scores <- function(debug=TRUE) {
+save_projection_scores <- function(win_size=10^5, sig_vec=NULL, debug=TRUE) {
 	sig_df = load_COSMIC_signatures()
 
+	if (is.null(sig_vec)) {
+		sig_vec = 1:nrow(sig_df)
+	}
 	for (s in 1:nrow(sig_df)) {
 		sig_vec = as.numeric(sig_df[s, c(-1)])
 		if (debug) { print(paste0("running projection_scores_by_sig() for signature ", s)) }
-		score_mtx_ls = projection_scores_by_sig(sig_vec)
+		score_mtx_ls = projection_scores_by_sig(sig_vec, win_size)
 
 		outfile = paste0(GLOBAL_CHR_MTX_DIR, "projection_score_mtx_ls_sig", s, ".rds")
 		saveRDS(score_mtx_ls, outfile)
