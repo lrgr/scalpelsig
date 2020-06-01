@@ -471,7 +471,7 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 
 	n_windows = 0
 	window_names = character(0)
-	for (i in 1:length(score_mtx_ls)) {
+	for (i in 1:length(score_mtx_ls)) {	
 		n_windows = n_windows + ncol(score_mtx_ls[[i]])
 		window_names = c(window_names, colnames(score_mtx_ls[[i]]) )
 	}
@@ -481,6 +481,7 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 
 	# main loop, compute objective function on each window
 	for (i in 1:length(score_mtx_ls)) {
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() chrom ", i, "/", length(score_mtx_ls))) }
 		
 		score_mtx = score_mtx_ls[[i]]
 		for (j in 1:ncol(score_mtx)) {
@@ -555,7 +556,7 @@ save_panel_sbs_tsv <- function(sbs_df, outfile) {
 ############# main ################
 
 # eval mode can be set to "auroc" or "aupr"
-sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, eval_mode="auroc",  debug=TRUE) {
+sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, windows_in_panel=27, eval_mode="auroc",  debug=TRUE) {
 	#ret = matrix(nrow = 30, ncol=3)
 	#rownames(ret) = 1:30
 	#colnames(ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance")
@@ -616,9 +617,9 @@ sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, sbs_arra
 		obj_v3 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=obj_fn_class_balance, global_sig_df=global_sig_df)
 
 		if (debug) { print(paste0(Sys.time(), "    getting panel windows")) }
-		panel_1_windows = names( top_n(obj_v1, 27) )
-		panel_2_windows = names( top_n(obj_v2, 27) )
-		panel_3_windows = names( top_n(obj_v3, 27) )
+		panel_1_windows = names( top_n(obj_v1, windows_in_panel) )
+		panel_2_windows = names( top_n(obj_v2, windows_in_panel) )
+		panel_3_windows = names( top_n(obj_v3, windows_in_panel) )
 
 		if (debug) {print(paste0(Sys.time(), "    generating panel dfs")) }
 		#panel_1_df = select_window_muts(panel_1_windows, mut_df)
@@ -842,7 +843,7 @@ compute_auprs <- function() {
 
 
 # eval mode can be set to "auroc" or "aupr"
-half_sig_specific_main <- function(sig_num, file_tag, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, eval_mode="auroc",  debug=TRUE) {
+half_sig_specific_main <- function(sig_num, file_tag, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, windows_in_panel=27, eval_mode="auroc",  debug=TRUE) {
 	#ret = matrix(nrow = 30, ncol=3)
 	#rownames(ret) = 1:30
 	#colnames(ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance")
@@ -902,9 +903,9 @@ half_sig_specific_main <- function(sig_num, file_tag, mut_df=NULL, global_sig_df
 		obj_v3 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=obj_fn_class_balance, global_sig_df=global_sig_df)
 
 		if (debug) { print(paste0(Sys.time(), "    getting panel windows")) }
-		panel_1_windows = names( top_n(obj_v1, 27) )
-		panel_2_windows = names( top_n(obj_v2, 27) )
-		panel_3_windows = names( top_n(obj_v3, 27) )
+		panel_1_windows = names( top_n(obj_v1, windows_in_panel) )
+		panel_2_windows = names( top_n(obj_v2, windows_in_panel) )
+		panel_3_windows = names( top_n(obj_v3, windows_in_panel) )
 
 		if (debug) {print(paste0(Sys.time(), "    generating panel dfs")) }
 		#panel_1_df = select_window_muts(panel_1_windows, mut_df)
@@ -1095,4 +1096,74 @@ memory_light_experiment_aupr <- function(n_trials=5) {
 		sec_sig_specific_main(curr_file_tag, global_sig_df)
 		iter = iter + 1
 	}
+}
+
+
+run_10k_experiment_auroc <- function(n_trials=3) {
+	print("loading mut_df")
+	mut_df = load_nz_mut_df_with_sigprob()
+	print("loading global_sig_df")
+	global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	print("loading sbs_array")
+	sbs_array_ls = load_10k_sbs_arr_ls()
+
+	print("beginning first loop")
+	iter = 1
+	sig_vec = c( rep(2, n_trials), rep(3, n_trials), rep(5, n_trials), rep(9, n_trials), rep(13, n_trials), rep(16, n_trials))
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
+		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
+		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array_ls, windows_in_panel=270, eval_mode="auroc")
+		iter = iter + 1
+	}
+	mut_df = NULL
+	sbs_array_ls = NULL
+	gc()
+
+	iter = 1
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
+		state_outfile = paste0(GLOBAL_LOGFILE_DIR, "state_", curr_file_tag, ".rds")
+
+		curr_state = readRDS(state_outfile)
+		sig_est_shell(curr_state)
+		sec_sig_specific_main(curr_file_tag, global_sig_df)
+		iter = iter + 1
+	}
+
+}
+
+
+run_10k_experiment_aupr <- function(n_trials=3) {
+	print("loading mut_df")
+	mut_df = load_nz_mut_df_with_sigprob()
+	print("loading global_sig_df")
+	global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	print("loading sbs_array")
+	sbs_array_ls = load_10k_sbs_arr_ls()
+
+	print("beginning first loop")
+	iter = 1
+	sig_vec = c( rep(1, n_trials), rep(8, n_trials), rep(18, n_trials), rep(30, n_trials) )
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
+		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
+		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array_ls, windows_in_panel=270, eval_mode="auroc")
+		iter = iter + 1
+	}
+	mut_df = NULL
+	sbs_array_ls = NULL
+	gc()
+
+	iter = 1
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
+		state_outfile = paste0(GLOBAL_LOGFILE_DIR, "state_", curr_file_tag, ".rds")
+
+		curr_state = readRDS(state_outfile)
+		sig_est_shell(curr_state)
+		sec_sig_specific_main(curr_file_tag, global_sig_df)
+		iter = iter + 1
+	}
+
 }
