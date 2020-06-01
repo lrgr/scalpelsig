@@ -51,7 +51,7 @@ load_nz_sig_estimates <- function(norm=FALSE) {
 }
 
 load_COSMIC_signatures <- function() {
-	df = read.csv(file="~/projects/hotspot_signature_panel/data/cosmic-signatures.tsv",
+	df = read.csv(file=paste0(GLOBAL_DATA_DIR, "cosmic-signatures.tsv"),
 		      sep="\t", header=TRUE)
 	colnames(df)[1] = "Signature"
 	
