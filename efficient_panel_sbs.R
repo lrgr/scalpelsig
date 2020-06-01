@@ -2,6 +2,26 @@
 
 library("foreach")
 
+
+load_10k_sbs_arr_ls <- function(debug=FALSE) {
+	chrom_vec = c(1:22, "X", "Y")
+	
+	file_prefix = paste0(GLOBAL_CHR_MTX_DIR, "samp_window_sbs_arrays/", "samp_window_sbs_array_winsize10000_chr")
+	
+	arr_list = list()
+	for (i in 1:length(chrom_vec)) {
+		if (debug) { print(paste0(Sys.time(), "    load_10k_sbs_arr_ls() chrom ", i, "/", length(chrom_vec))) }
+		sbs_arr_file = paste0(file_prefix, chrom_vec[i], ".rds")
+		arr_list[[ chrom_vec[i] ]] = readRDS(sbs_arr_file)
+	}
+	
+	return(arr_list)
+}
+
+
+
+
+
 # given a set of windows and precomputed sbs arrays, returns a matrix with sbs counts for each patient in the panel
 # the returned matrix has dimensions [<num_samples>, 96]
 # panel_window_names : a character vector containing the name of each window in the panel

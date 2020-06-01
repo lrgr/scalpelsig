@@ -482,6 +482,8 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 	# main loop, compute objective function on each window
 	for (i in 1:length(score_mtx_ls)) {
 		
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() chrom ", i, "/", length(score_mtx_ls))) }
+
 		score_mtx = score_mtx_ls[[i]]
 		for (j in 1:ncol(score_mtx)) {
 			window = colnames(score_mtx)[j]
