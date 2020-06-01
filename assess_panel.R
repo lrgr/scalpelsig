@@ -1,6 +1,7 @@
 # compute how well a panel distinguishes signature presence
 
 library(pROC)
+library(PRROC)
 
 source("preprocess_windows.R")
 source("win_sigprob_analysis.R")
@@ -27,7 +28,7 @@ source("GLOBAL_CONFIG.R")
 ######################
 
 # TODO: documentation - what script creates these files?
-load_sig_estimate_df <- function(filename, norm=FALSE) {
+load_sig_estimate_df <- function(filename, norm=FALSE, replace_na=FALSE) {
         df = read.csv(file=filename, sep="\t", header=TRUE)
 	colnames(df)[1] = "Patient"
 
@@ -35,6 +36,11 @@ load_sig_estimate_df <- function(filename, norm=FALSE) {
 		rs = rowSums(df[,-1])
 	        df[,-1] = df[,-1] / rs
 		}
+
+	# replace NA values with 0
+	if (replace_na==TRUE) {
+		df[is.na(df)] = 0
+	}
 	
 	return(df)
 }
@@ -114,7 +120,7 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 
 	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
 
-	panel_sig_df = load_sig_estimate_df(infile)
+	panel_sig_df = load_sig_estimate_df(infile, replace_na=TRUE)
 
 	panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
 	panel_score_df = add_labels_to_panel_df(panel_score_df, sig_activity_labels)
@@ -122,6 +128,30 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score)) ) )
 }
 
+
+compute_panel_aupr <- function(sig_num, test_set, sig_est_infile, global_sig_df=NULL, debug=FALSE) {
+	if (is.null(global_sig_df)) {
+		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+	
+	panel_sig_df = load_sig_estimate_df(sig_est_infile, replace_na=TRUE)
+
+	panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
+	panel_score_df = add_labels_to_panel_df(panel_score_df, sig_activity_labels)
+
+	fg = panel_score_df[ panel_score_df$Active==TRUE, "Score"]
+	bg = panel_score_df[ panel_score_df$Active==FALSE, "Score"] 
+
+	pr <- pr.curve(scores.class0=fg, scores.class1=bg) # from PRROC package, entries [[2]] and [[3]] give aupr computed by 2 different methods
+	return(pr[[3]])
+}
+
+
+
+# this is used to evaulate the performance of the MSK IMPACT and WES panels against the proper test sets of each
+# panel found by our framework.
 panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=NULL, debug=TRUE) {
 	test_set_ls = load_logged_test_sets(sig_num)
 	if (debug) { print(paste0("Loaded ", length(test_set_ls), " logged test sets for signature ", sig_num)) }

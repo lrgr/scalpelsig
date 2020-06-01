@@ -4,7 +4,7 @@ library(abind)
 
 source("preprocess_windows.R")
 source("assess_panel.R")
-
+source("efficient_panel_sbs.R")
 
 GLOBAL_OUT_DIR = "~/projects/hotspot_signature_panel/out/"
 GLOBAL_PANEL_DIR = paste0(GLOBAL_OUT_DIR, "SIGNATURE_PANELS/")
@@ -70,6 +70,13 @@ load_10k_ps_score_mtx_ls <- function(sig_num) {
 load_100k_ps_score_mtx_ls <- function(sig_num) {
 	return(readRDS(paste0(GLOBAL_CHR_MTX_DIR, "100k_proj_scores/projection_score_mtx_ls_sig", sig_num, ".rds")))
 }
+
+load_combined_100k_arr <- function() {
+	filename = paste0(GLOBAL_DATA_DIR, "COMBINED_sbs_array_winsize1e+05.rds")
+	arr = readRDS(filename)
+	return(arr)
+}
+
 
 #############################################
 # quicker way to convert panel to sbs tsv   #
@@ -537,7 +544,8 @@ save_panel_sbs_tsv <- function(sbs_df, outfile) {
 
 ############# main ################
 
-sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, debug=TRUE) {
+# eval mode can be set to "auroc" or "aupr"
+sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, eval_mode="auroc",  debug=TRUE) {
 	#ret = matrix(nrow = 30, ncol=3)
 	#rownames(ret) = 1:30
 	#colnames(ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance")
@@ -550,6 +558,11 @@ sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, debug=TR
 	if (is.null(global_sig_df)) {
 		if (debug) { print(paste0(Sys.time(), "    loading global_sig_df")) }
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	if (is.null(sbs_array)) {
+		print(paste0(Sys.time(), "    loading default sbs_array (NOTE: THE 100KB WINDOW SBS ARRAY IS THE DEFAULT)"))
+		sbs_array = load_combined_100k_arr()
 	}
 
 	samp_names = as.character(global_sig_df$Patient)
@@ -577,7 +590,11 @@ sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, debug=TR
 			if (debug) {print("bad test set")}
 			next
 		}
-		
+
+		if (!(eval_mode %in% c("auroc", "aupr")) ) { 
+			stop("eval_mode must be set to either \"auroc\" or \"aupr\".")
+		}		
+
 		if (debug) { print(paste0(Sys.time(), "    sig_num: ", sig_num, " loading score_mtx_ls")) }
 		score_mtx_ls = load_ps_score_mtx_ls(sig_num)
 
@@ -594,18 +611,27 @@ sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, debug=TR
 		panel_3_windows = names( top_n(obj_v3, 27) )
 
 		if (debug) {print(paste0(Sys.time(), "    generating panel dfs")) }
-		panel_1_df = select_window_muts(panel_1_windows, mut_df)
-		panel_2_df = select_window_muts(panel_2_windows, mut_df)
-		panel_3_df = select_window_muts(panel_3_windows, mut_df)
+		#panel_1_df = select_window_muts(panel_1_windows, mut_df)
+		#panel_2_df = select_window_muts(panel_2_windows, mut_df)
+		#panel_3_df = select_window_muts(panel_3_windows, mut_df)
+
+		panel_1_df = get_panel_sbs_df(panel_1_windows, sbs_array)
+		panel_2_df = get_panel_sbs_df(panel_2_windows, sbs_array)
+		panel_3_df = get_panel_sbs_df(panel_3_windows, sbs_array)
+
 
 		sbs_outfile_1 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj1_sig", sig_num, "_panel_sbs_", timestamp_tag, ".tsv")
 		sbs_outfile_2 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj2_sig", sig_num, "_panel_sbs_", timestamp_tag, ".tsv")
 		sbs_outfile_3 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj3_sig", sig_num, "_panel_sbs_", timestamp_tag, ".tsv")
 
 		if (debug) {print(paste0(Sys.time(), "    saving to:")); print(sbs_outfile_1); print(sbs_outfile_2); print(sbs_outfile_3)}
-		save_panel_sbs_tsv(sbs_df_from_mut_df(panel_1_df), sbs_outfile_1)
-		save_panel_sbs_tsv(sbs_df_from_mut_df(panel_2_df), sbs_outfile_2)
-		save_panel_sbs_tsv(sbs_df_from_mut_df(panel_3_df), sbs_outfile_3)
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_1_df), sbs_outfile_1)
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_2_df), sbs_outfile_2)
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_3_df), sbs_outfile_3)
+
+		save_panel_sbs_tsv(panel_1_df, sbs_outfile_1)
+		save_panel_sbs_tsv(panel_2_df, sbs_outfile_2)
+		save_panel_sbs_tsv(panel_3_df, sbs_outfile_3)
 
 		sig_est_outfile_1 = paste0(GLOBAL_PANEL_SIG_EST_DIR, "ps_obj1_sig", sig_num, "_est_", timestamp_tag, ".tsv")
 		sig_est_outfile_2 = paste0(GLOBAL_PANEL_SIG_EST_DIR, "ps_obj2_sig", sig_num, "_est_", timestamp_tag, ".tsv")
@@ -629,10 +655,22 @@ sig_specific_main <- function(sig_num, mut_df=NULL, global_sig_df=NULL, debug=TR
 			      " -of ", sig_est_outfile_3)
 		)
 
-		if (debug) {print(paste0(Sys.time(), "    running compute_panel_auroc()"))}
-		auroc_1 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_1, global_sig_df=global_sig_df)
-		auroc_2 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_2, global_sig_df=global_sig_df)
-		auroc_3 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_3, global_sig_df=global_sig_df)
+		
+		if (eval_mode=="auroc") {
+			if (debug) {print(paste0(Sys.time(), "    running compute_panel_auroc()"))}
+			auroc_1 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_1, global_sig_df=global_sig_df)
+			auroc_2 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_2, global_sig_df=global_sig_df)
+			auroc_3 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_3, global_sig_df=global_sig_df)
+		} else if (eval_mode=="aupr") {
+			if (debug) {print(paste0(Sys.time(), "    running compute_panel_aupr()"))}
+			auroc_1 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_1, global_sig_df=global_sig_df)
+			auroc_2 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_2, global_sig_df=global_sig_df)
+			auroc_3 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_3, global_sig_df=global_sig_df)
+		} else {
+			# this shouldn't happen, gets checked for above.
+			stop("eval_mode must be set to either \"auroc\" or \"aupr\". (this shouldn't happen here)")
+		}
+		
 		best_auroc = max(c(auroc_1, auroc_2, auroc_3))
 
 		if (debug) {print(paste0(Sys.time(), "    results for signature ", sig_num, ": ")); print(auroc_1); print(auroc_2); print(auroc_3)}
@@ -772,11 +810,279 @@ main <- function(mut_df=NULL, global_sig_df=NULL, debug=TRUE) {
 
 
 
-run_this <- function() {
+run_this <- function(mut_df=NULL, global_sig_df=NULL, sbs_arr=NULL) {
+	if(is.null(mut_df)) { mut_df = load_nz_mut_df_with_sigprob() }
+	if(is.null(global_sig_df)) { global_sig_df = load_nz_sig_estimates(norm=TRUE) }
+	if(is.null(sbs_arr)) { sbs_arr = load_combined_100k_arr() }
+
+	for (s in c(2,2,2,2,2, 3,3,3,3,3, 5,5,5,5,5, 9,9,9,9,9, 13,13,13,13,13, 16,16,16,16,16)) {
+		sig_specific_main(s, mut_df, global_sig_df, sbs_arr)
+	}
+}
+
+compute_auprs <- function() {
 	mut_df = load_nz_mut_df_with_sigprob()
 	global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	
-	for (s in c(2,2,2,2,2, 3,3,3,3,3, 5,5,5,5,5, 9,9,9,9,9, 13,13,13,13,13, 16,16,16,16,16)) {
-		sig_specific_main(s, mut_df, global_sig_df)
+	for (s in c(1,1,1,1,1, 8,8,8,8,8, 18,18,18,18,18, 30,30,30,30,30)) {
+		sig_specific_main(s, mut_df, global_sig_df, eval_mode="aupr")
+	} 
+}
+
+
+
+# eval mode can be set to "auroc" or "aupr"
+half_sig_specific_main <- function(sig_num, file_tag, mut_df=NULL, global_sig_df=NULL, sbs_array=NULL, eval_mode="auroc",  debug=TRUE) {
+	#ret = matrix(nrow = 30, ncol=3)
+	#rownames(ret) = 1:30
+	#colnames(ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance")
+	
+	if (is.null(mut_df)) {
+		if (debug) { print(paste0(Sys.time(),"    loading mut_df")) }
+		mut_df = load_nz_mut_df_with_sigprob()
+	}
+
+	if (is.null(global_sig_df)) {
+		if (debug) { print(paste0(Sys.time(), "    loading global_sig_df")) }
+		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	if (is.null(sbs_array)) {
+		print(paste0(Sys.time(), "    loading default sbs_array (NOTE: THE 100KB WINDOW SBS ARRAY IS THE DEFAULT)"))
+		sbs_array = load_combined_100k_arr()
+	}
+
+	samp_names = as.character(global_sig_df$Patient)
+
+	if (debug) { print(paste0(Sys.time(), "    splitting test and train")) }
+	#test_train = test_train_random_split(samp_names, .10)
+	test_train = tt_stratified_split(sig_num, samp_names, .10, global_sig_df, debug=debug)
+	test_set = test_train[[1]]
+	train_set = test_train[[2]]
+
+	test_train_outfile = paste0(GLOBAL_LOGFILE_DIR, "test_train_sig", sig_num, "_", file_tag, ".rds")
+	if (debug) {print(paste0("saving test & train set to : ", test_train_outfile))}
+	saveRDS(test_train, test_train_outfile)
+
+
+
+	if (debug) { print(paste0(Sys.time(), "    starting main loop")) }
+	#for (sig_num in 1:30) {
+		# if test set contains all positive or all negative examples, go to next signature
+		activity_vec = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+		test_activity = activity_vec[test_set]
+		check = sum(test_activity)
+		if (check==0 | check==length(test_set)) {
+			if (debug) {print("bad test set")}
+			next
+		}
+
+		if (!(eval_mode %in% c("auroc", "aupr")) ) { 
+			stop("eval_mode must be set to either \"auroc\" or \"aupr\".")
+		}		
+
+		if (debug) { print(paste0(Sys.time(), "    sig_num: ", sig_num, " loading score_mtx_ls")) }
+		score_mtx_ls = load_ps_score_mtx_ls(sig_num)
+
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() with simple_obj_fn")) }
+		obj_v1 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=simple_obj_fn, global_sig_df=global_sig_df)
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() with obj_fn_sqrt")) }
+		obj_v2 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=obj_fn_sqrt, global_sig_df=global_sig_df)
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() with obj_fn_class_balance")) }
+		obj_v3 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=obj_fn_class_balance, global_sig_df=global_sig_df)
+
+		if (debug) { print(paste0(Sys.time(), "    getting panel windows")) }
+		panel_1_windows = names( top_n(obj_v1, 27) )
+		panel_2_windows = names( top_n(obj_v2, 27) )
+		panel_3_windows = names( top_n(obj_v3, 27) )
+
+		if (debug) {print(paste0(Sys.time(), "    generating panel dfs")) }
+		#panel_1_df = select_window_muts(panel_1_windows, mut_df)
+		#panel_2_df = select_window_muts(panel_2_windows, mut_df)
+		#panel_3_df = select_window_muts(panel_3_windows, mut_df)
+
+		panel_1_df = get_panel_sbs_df(panel_1_windows, sbs_array)
+		panel_2_df = get_panel_sbs_df(panel_2_windows, sbs_array)
+		panel_3_df = get_panel_sbs_df(panel_3_windows, sbs_array)
+
+
+		sbs_outfile_1 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj1_sig", sig_num, "_panel_sbs_", file_tag, ".tsv")
+		sbs_outfile_2 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj2_sig", sig_num, "_panel_sbs_", file_tag, ".tsv")
+		sbs_outfile_3 = paste0(GLOBAL_PANEL_SBS_DIR, "ps_obj3_sig", sig_num, "_panel_sbs_", file_tag, ".tsv")
+
+		if (debug) {print(paste0(Sys.time(), "    saving to:")); print(sbs_outfile_1); print(sbs_outfile_2); print(sbs_outfile_3)}
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_1_df), sbs_outfile_1)
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_2_df), sbs_outfile_2)
+		#save_panel_sbs_tsv(sbs_df_from_mut_df(panel_3_df), sbs_outfile_3)
+
+		save_panel_sbs_tsv(panel_1_df, sbs_outfile_1)
+		save_panel_sbs_tsv(panel_2_df, sbs_outfile_2)
+		save_panel_sbs_tsv(panel_3_df, sbs_outfile_3)
+
+		sig_est_outfile_1 = paste0(GLOBAL_PANEL_SIG_EST_DIR, "ps_obj1_sig", sig_num, "_est_", file_tag, ".tsv")
+		sig_est_outfile_2 = paste0(GLOBAL_PANEL_SIG_EST_DIR, "ps_obj2_sig", sig_num, "_est_", file_tag, ".tsv")
+		sig_est_outfile_3 = paste0(GLOBAL_PANEL_SIG_EST_DIR, "ps_obj3_sig", sig_num, "_est_", file_tag, ".tsv")
+
+		state = list()
+		state["sbs_outfile_1"] = sbs_outfile_1
+		state["sbs_outfile_2"] = sbs_outfile_2
+		state["sbs_outfile_3"] = sbs_outfile_3
+		state["sig_est_outfile_1"] = sig_est_outfile_1
+		state["sig_est_outfile_2"] = sig_est_outfile_2
+		state["sig_est_outfile_3"] = sig_est_outfile_3
+		state["file_tag"] = file_tag
+		state[["test_set"]] = test_set
+		state["sig_num"] = sig_num
+		state["eval_mode"] = eval_mode
+
+		state_outfile = paste0(GLOBAL_LOGFILE_DIR, "state_", file_tag, ".rds")
+		saveRDS(state, file=state_outfile)
+}
+
+# these are the command line calls to run signature estimator
+sig_est_shell <- function(state, debug=TRUE) {
+	sbs_outfile_1 = state[["sbs_outfile_1"]]
+	sbs_outfile_2 = state[["sbs_outfile_2"]]
+	sbs_outfile_3 = state[["sbs_outfile_3"]]
+	sig_est_outfile_1 = state[["sig_est_outfile_1"]]
+	sig_est_outfile_2 = state[["sig_est_outfile_2"]]
+	sig_est_outfile_3 = state[["sig_est_outfile_3"]]
+
+	if (debug) {print("running signature estimator for panel 1")}
+	system(paste0("python signature-estimation-py/signature_estimation.py -mf ", sbs_outfile_1, 
+		      " -sf ", GLOBAL_DATA_DIR, "cosmic-signatures.tsv ",
+		      " -of ", sig_est_outfile_1)
+	)
+
+	if (debug) {print("running signature estimator for panel 2")}
+	system(paste0("python signature-estimation-py/signature_estimation.py -mf ", sbs_outfile_2, 
+		      " -sf ", GLOBAL_DATA_DIR, "cosmic-signatures.tsv ",
+		      " -of ", sig_est_outfile_2)
+	)
+
+	if (debug) {print("running signature estimator for panel 3")}
+	system(paste0("python signature-estimation-py/signature_estimation.py -mf ", sbs_outfile_3, 
+		      " -sf ", GLOBAL_DATA_DIR, "cosmic-signatures.tsv ",
+		      " -of ", sig_est_outfile_3)
+	)
+}
+
+sec_sig_specific_main <- function(file_tag, global_sig_df=NULL, debug=TRUE) {
+		state_infile = paste0(GLOBAL_LOGFILE_DIR, "state_", file_tag, ".rds")		
+		state = readRDS(state_infile)
+
+		sig_est_outfile_1 = state[["sig_est_outfile_1"]]
+		sig_est_outfile_2 = state[["sig_est_outfile_2"]]
+		sig_est_outfile_3 = state[["sig_est_outfile_3"]]
+		test_set = state[["test_set"]]
+		sig_num = state[["sig_num"]]
+		eval_mode = state[["eval_mode"]]
+
+		if (is.null(global_sig_df)) { global_sig_df = load_nz_sig_estimates(norm=TRUE) }
+
+		
+		if (eval_mode=="auroc") {
+			if (debug) {print(paste0(Sys.time(), "    running compute_panel_auroc()"))}
+			auroc_1 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_1, global_sig_df=global_sig_df)
+			auroc_2 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_2, global_sig_df=global_sig_df)
+			auroc_3 = compute_panel_auroc(sig_num, test_set, sig_est_outfile_3, global_sig_df=global_sig_df)
+		} else if (eval_mode=="aupr") {
+			if (debug) {print(paste0(Sys.time(), "    running compute_panel_aupr()"))}
+			auroc_1 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_1, global_sig_df=global_sig_df)
+			auroc_2 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_2, global_sig_df=global_sig_df)
+			auroc_3 = compute_panel_aupr(sig_num, test_set, sig_est_outfile_3, global_sig_df=global_sig_df)
+		} else {
+			# this shouldn't happen, gets checked for above.
+			stop("eval_mode must be set to either \"auroc\" or \"aupr\". (this shouldn't happen here)")
+		}
+		
+		best_auroc = max(c(auroc_1, auroc_2, auroc_3))
+
+		if (debug) {print(paste0(Sys.time(), "    results for signature ", sig_num, ": ")); print(auroc_1); print(auroc_2); print(auroc_3)}
+
+		#if (debug) {print(paste0(Sys.time(), "    running est_pval()")) }
+		#pval = est_pval(best_auroc, sig_num, test_set, global_sig_df, debug=debug)
+		
+
+		if (debug) { print("saving results file")}
+		safe_ret = matrix(c(auroc_1, auroc_2, auroc_3, best_auroc)) #, pval))
+		rownames(safe_ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance", "best") #, "est pval")
+		colnames(safe_ret) = c("test_set_auroc")
+		safe_ret_outfile = paste0(GLOBAL_PANEL_DIR, "ps_panel_results_sig", sig_num, "_", file_tag, ".txt")
+		write.table(safe_ret, file=safe_ret_outfile)
+
+		#ret[sig_num, ] = c(auroc_1, auroc_2, auroc_3)	
+	#}
+
+	#auc_mtx_outfile = paste0(GLOBAL_OUT_DIR, "ps_auc_mtx_", timestamp_tag, ".txt")
+	#write.table(ret, file=auc_mtx_outfile)
+	
+}
+
+memory_light_experiment_auroc <- function(n_trials=5) {
+	print("loading mut_df")
+	mut_df = load_nz_mut_df_with_sigprob()
+	print("loading global_sig_df")
+	global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	print("loading sbs_array")
+	sbs_array = load_combined_100k_arr()
+
+	print("beginning first loop")
+	iter = 1
+	sig_vec = c( rep(2, n_trials), rep(3, n_trials), rep(5, n_trials), rep(9, n_trials), rep(13, n_trials), rep(16, n_trials))
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_SIG", s, "_ITER", iter)
+		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
+		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array, eval_mode="auroc")
+		iter = iter + 1
+	}
+	mut_df = NULL
+	sbs_array = NULL
+	gc()
+
+	iter = 1
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_SIG", s, "_ITER", iter)
+		state_outfile = paste0(GLOBAL_LOGFILE_DIR, "state_", curr_file_tag, ".rds")
+
+		curr_state = readRDS(state_outfile)
+		sig_est_shell(curr_state)
+		sec_sig_specific_main(curr_file_tag, global_sig_df)
+		iter = iter + 1
+	}
+}
+
+
+memory_light_experiment_aupr <- function(n_trials=5) {
+	print("loading mut_df")
+	mut_df = load_nz_mut_df_with_sigprob()
+	print("loading global_sig_df")
+	global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	print("loading sbs_array")
+	sbs_array = load_combined_100k_arr()
+
+	print("beginning first loop")
+	iter = 1
+	sig_vec = c( rep(1, n_trials), rep(8, n_trials), rep(18, n_trials), rep(30, n_trials) )
+	#sig_vec = c(1,1,1,1,1, 8,8,8,8,8, 18,18,18,18,18, 30,30,30,30,30)
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_SIG", s, "_ITER", iter)
+		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
+		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array, eval_mode="aupr")
+		iter = iter + 1
+	}
+	mut_df = NULL
+	sbs_array = NULL
+	gc()
+
+	iter = 1
+	for (s in sig_vec) {
+		curr_file_tag = paste0("TAG_SIG", s, "_ITER", iter)
+		state_outfile = paste0(GLOBAL_LOGFILE_DIR, "state_", curr_file_tag, ".rds")
+
+		curr_state = readRDS(state_outfile)
+		sig_est_shell(curr_state)
+		sec_sig_specific_main(curr_file_tag, global_sig_df)
+		iter = iter + 1
 	}
 }
