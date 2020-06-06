@@ -465,6 +465,7 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 
 	activity_vec = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
 
+
 	train_act_vec = activity_vec[train_samps]
 	pos_samps = names(train_act_vec[train_act_vec==TRUE])
 	neg_samps = names(train_act_vec[train_act_vec==FALSE])
@@ -483,6 +484,8 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 	for (i in 1:length(score_mtx_ls)) {
 		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() chrom ", i, "/", length(score_mtx_ls))) }
 		
+		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() chrom ", i, "/", length(score_mtx_ls))) }
+
 		score_mtx = score_mtx_ls[[i]]
 		for (j in 1:ncol(score_mtx)) {
 			window = colnames(score_mtx)[j]
@@ -843,7 +846,7 @@ compute_auprs <- function() {
 
 
 # eval mode can be set to "auroc" or "aupr"
-half_sig_specific_main <- function(sig_num, file_tag, global_sig_df=NULL, sbs_array=NULL, windows_in_panel=27, eval_mode="auroc",  debug=TRUE) {
+half_sig_specific_main <- function(sig_num, file_tag, global_sig_df=NULL, sbs_array=NULL, win_mode="100k", windows_in_panel=27, eval_mode="auroc",  debug=TRUE) {
 	#ret = matrix(nrow = 30, ncol=3)
 	#rownames(ret) = 1:30
 	#colnames(ret) = c("simple_obj_fn", "obj_fn_sqrt", "obj_fn_class_balance")
@@ -892,8 +895,8 @@ half_sig_specific_main <- function(sig_num, file_tag, global_sig_df=NULL, sbs_ar
 			stop("eval_mode must be set to either \"auroc\" or \"aupr\".")
 		}		
 
-		if (debug) { print(paste0(Sys.time(), "    sig_num: ", sig_num, " loading score_mtx_ls")) }
-		score_mtx_ls = load_ps_score_mtx_ls(sig_num)
+		if (debug) { print(paste0(Sys.time(), "    sig_num: ", sig_num, " loading score_mtx_ls - mode: ", win_mode)) }
+		score_mtx_ls = load_ps_score_mtx_ls(sig_num, mode=win_mode)
 
 		if (debug) { print(paste0(Sys.time(), "    compute_obj_score_ps() with simple_obj_fn")) }
 		obj_v1 = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn=simple_obj_fn, global_sig_df=global_sig_df)
@@ -1100,7 +1103,7 @@ memory_light_experiment_aupr <- function(n_trials=5) {
 
 
 run_10k_experiment_auroc <- function(n_trials=3) {
-	print("loading mut_df")
+	#print("loading mut_df")
 	#mut_df = load_nz_mut_df_with_sigprob()
 	print("loading global_sig_df")
 	global_sig_df = load_nz_sig_estimates(norm=TRUE)
@@ -1113,8 +1116,9 @@ run_10k_experiment_auroc <- function(n_trials=3) {
 	for (s in sig_vec) {
 		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
 		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
-		half_sig_specific_main(s, curr_file_tag, global_sig_df, sbs_array_ls, windows_in_panel=270, eval_mode="auroc")
+		half_sig_specific_main(s, curr_file_tag, global_sig_df, sbs_array_ls, win_mode="10k", windows_in_panel=270, eval_mode="auroc")
 		iter = iter + 1
+		gc()
 	}
 	#mut_df = NULL
 	sbs_array_ls = NULL
@@ -1148,8 +1152,9 @@ run_10k_experiment_aupr <- function(n_trials=3) {
 	for (s in sig_vec) {
 		curr_file_tag = paste0("TAG_10k_SIG", s, "_ITER", iter)
 		print(paste0(Sys.time(), "    current file tag: ", curr_file_tag, "    running first half function"))
-		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array_ls, windows_in_panel=270, eval_mode="auroc")
+		half_sig_specific_main(s, curr_file_tag, mut_df, global_sig_df, sbs_array_ls, win_mode="10k", windows_in_panel=270, eval_mode="auroc")
 		iter = iter + 1
+		gc()
 	}
 	mut_df = NULL
 	sbs_array_ls = NULL

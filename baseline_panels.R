@@ -197,33 +197,50 @@ window_main <- function(WINDOWS_IN_PANEL, NUM_PANELS, WIN_MODE="100k", START_IND
 		if (verbose) { print("loading mut_df") }
 		mut_df = load_nz_mut_df_with_sigprob()
 	}
-
+	
 	if (verbose) { print("loading all window names") }
 	#possible_windows = get_all_mutwindows(mode=WIN_MODE)
 	if (WIN_MODE == "100k") {
 		possible_windows = active_100k_windows(sbs_array)
 	}
 
+
 	ret_ls <- foreach (i = START_INDEX:(NUM_PANELS+START_INDEX)) %dopar% {
 		if (verbose>=1) { print(paste0("Starting random panel ", i, "/", NUM_PANELS)) }
 
 		if (verbose>=2) { print(paste0("randomly selecting ", WINDOWS_IN_PANEL, " windows")) }
-		selected_windows = get_random_windows(WINDOWS_IN_PANEL, possible_windows, check_overlap=FALSE)
+		selected_windows = get_random_windows(WINDOWS_IN_PANEL, possible_windows, check_overlap=FALSE)	
 
 		if (verbose>=2) { print("getting mutations in panel") }
 		panel_df = select_window_muts(selected_windows, mut_df) # this is a big runtime bottleneck
 		
-		sbs_outfile = paste0(SBS_OUTPREFIX, i, ".tsv")
-		if (verbose>=2) { print(paste0("saving SBS matrix to ", sbs_outfile)) }
+		#sbs_outfile = paste0(SBS_OUTPREFIX, i, ".tsv")
+		#if (verbose>=2) { print(paste0("saving SBS matrix to ", sbs_outfile)) }
 		panel_sbs = sbs_df_from_mut_df(panel_df)
+
+		if (verbose >=3) { 
+			print(paste0("Iteration ", i, ": "))
+			print(selected_windows)
+			print(dim(panel_df))
+			print(dim(panel_sbs))
+		}	
+
 		panel_sbs
 	}
 
+	saveRDS(ret_ls, "ret_ls.rds")
+
+	success_count = 0
 	for (i in 1:length(ret_ls) ) {
 		panel_sbs_df = ret_ls[[i]]
-		sbs_outfile = paste0(SBS_OUTPREFIX, i+START_INDEX, ".tsv")
-		save_panel_sbs_tsv(panel_sbs_df, sbs_outfile)
-	}	
+		
+		if (!is.null(panel_sbs_df)) {
+			sbs_outfile = paste0(SBS_OUTPREFIX, i+START_INDEX, ".tsv")
+			save_panel_sbs_tsv(panel_sbs_df, sbs_outfile)
+			success_count = success_count + 1
+		}
+	}
+	print(paste0(success_count, "/", NUM_PANELS, " panels generated successfully."))	
 }
 
 
