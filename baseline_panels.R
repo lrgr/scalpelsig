@@ -168,10 +168,19 @@ find_active_window_ls <- function(sbs_array) {
 	return(active_windows)
 }
 
+find_active_window_vec_from_arr_ls <- function(sbs_arr_ls) {
+	active_windows = character(0)
+	for (chr_arr in sbs_arr_ls) {
+		curr = as.character(find_active_window_ls(chr_arr))
+		active_windows = c(active_windows, curr)
+	}
+	return(active_windows)
+}
+
 
 active_100k_windows <- function(combined_sbs_array=NULL, debug=TRUE) {
 	if (is.null(combined_sbs_array)) {
-		if (debug) { print(paste0(Sys.time, "    active_100k_windows() loading combined_sbs_array")) }
+		if (debug) { print(paste0(Sys.time(), "    active_100k_windows() loading combined_sbs_array")) }
 		combined_sbs_array = load_combined_100k_arr()
 	}
 
@@ -179,6 +188,16 @@ active_100k_windows <- function(combined_sbs_array=NULL, debug=TRUE) {
 	return(as.character(active_windows))
 }
 
+active_10k_windows <- function(sbs_arr_ls = NULL, debug=TRUE) {
+	if (is.null(sbs_arr_ls)) {
+		if (debug) { print(paste0(Sys.time(), "    loading 10kb sbs array.")) }
+		sbs_arr_ls = load_10k_sbs_arr_ls()
+		if (debug) { print(paste0(Sys.time(), "    done.")) }
+	}
+	
+	active_windows = find_active_window_vec_from_arr_ls(sbs_arr_ls)
+	return(active_windows)
+}
 
 
 #TODO write modified MAIN() to use these windows 
@@ -249,8 +268,3 @@ window_main <- function(WINDOWS_IN_PANEL, NUM_PANELS, WIN_MODE="100k", START_IND
 #window_main(27, 50, GLOBAL_BASELINE_PANEL_DIR, verbose=1)
 
 
-#10k_active_windows <- function(chr_sbs_array_ls = NULL) {
-#	if (is.null(chr_sbs_array_ls)) {
-#		
-#	}
-#}
