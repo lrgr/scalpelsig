@@ -82,12 +82,16 @@ Eval.Mode = character(n)
 Eval.Result = numeric(n)
 File.Name = character(n)
 
+MSK.IMPACT.Result = numeric(n)
+WES.Result = numeric(n)
+
 Est.Pval = numeric(n)
 Baseline.Med = numeric(n)
 Baseline.Max = numeric(n)
 BP.Max.File = character(n)
 
 i = 1
+# loop through each file containing the 
 for (f in files) {
 	print(paste0(Sys.time(), "    ", i, "/", length(files))) 
 	#print(f)
@@ -117,17 +121,34 @@ for (f in files) {
 
 	sig_num = info[["sig_num"]]
 
+	msk_impact_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "msk_test_panel_sig_est.tsv")
+	wes_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "gencode_exon_panel_sig_est.tsv")
+
+	# COMPUTE AUROC / AUPR OF PANEL
 	if (EVAL_MODE=="auroc") {
 		result = compute_panel_auroc(sig_num, test_set, sig_est_outfile, global_sig_df)
+		
+		# benchmark panel results
+		msk_result = compute_panel_auroc(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+		wes_result = compute_panel_auroc(sig_num, test_set, wes_sig_est, global_sig_df)
 	} else if (EVAL_MODE=="aupr") {
-		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df)
+		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df)		
+
+		# benchmark panel results
+		msk_result = compute_panel_aupr(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+		wes_result = compute_panel_aupr(sig_num, test_set, wes_sig_est, global_sig_df)
 	} else {
 		stop("eval_mode was something other than \'auroc\' or \'aupr\'")
 	}
 
-	print("computing baseline vec")
+	Eval.Result[i] = result
+	MSK.IMPACT.Result[i] = msk_result
+	WES.Result[i] = wes_result
+
+	# random baseline computation
+	#print("computing baseline vec")
 	#baseline_vec = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=EVAL_MODE)
-	print("done.")
+	#print("done.")
 	
 	#baseline_med = median(baseline_vec)
 	#baseline_max = max(baseline_vec)
@@ -138,10 +159,6 @@ for (f in files) {
 
 	#n_better = sum(baseline_vec >= result)
 	#pval = n_better / length(baseline_vec)
-
-	
-
-	Eval.Result[i] = result
 	
 	#Est.Pval[i] = pval
 	#Baseline.Med[i] = baseline_med
@@ -150,7 +167,12 @@ for (f in files) {
 	i = i + 1
 }
 
-results_df = data.frame(Eval.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+# results df without random baseline
+results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+
+# results df with random baseline
+#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+
 results_df = results_df[order(Signature, Obj.Fn, -Eval.Result), ]
 
 results_timestamp = format(Sys.time(), "%d-%b-%Y_%H-%M")

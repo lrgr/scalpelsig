@@ -125,7 +125,7 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 	panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
 	panel_score_df = add_labels_to_panel_df(panel_score_df, sig_activity_labels)
 
-	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score)) ) )
+	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score, quiet=TRUE)) ) )
 }
 
 
