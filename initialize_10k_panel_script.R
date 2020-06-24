@@ -37,8 +37,10 @@ if (is.null(file_tag) | is.null(sig_group) | is.null(num_iters)) {
 ##############################
 ##############################
 
-if (sig_group==1) { sig_vec = c(2, 3, 5, 9, 13, 16) } #class-balanced signatures
-if (sig_group==2) { sig_vec = c(1, 8, 18, 30) } # class imbalanced signatures
+if (sig_group==1) { sig_vec = c(2, 3, 5, 9, 13, 16) } #class-balanced signatures (computed with COSMIC v2 1-30)
+if (sig_group==2) { sig_vec = c(1, 8, 18, 30) } # class imbalanced signatures (computed with COSMIC v2 1-30)
+if (sig_group==3) { sig_vec = c(2, 3, 13) } # NEW class-balanced signatures (computed with COSMIC v2 breast cancer sigs)
+if (sig_group==4) { sig_vec = c(1, 5, 8, 18, 30)} # NEW class-inbalanced signatures (COSMIC v2 breast cancer sigs)
 
 sig_vec = sort(rep(sig_vec, num_iters))
 

@@ -1,7 +1,23 @@
 setwd("..")
 source("projection_score.R")
 
-file_tag = "test_run"
+library(optparse)
+
+option_list = list(
+	make_option(c("-t", "--tag"), type="character", default=NULL,
+                        help="tag to refer downstream scripts to the correct training sets", metavar="character")
+);
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+file_tag = opt$tag
+
+if (is.null(file_tag)) {
+	stop("No file_tag recieved (command line -t ). Please supply a file_tag.")
+}
+
+#file_tag = "SEC_BATCH_BAL"
 
 print(paste0(Sys.time(), "    loading 10kb sbs array"))
 sbs_arr_ls_10k = load_10k_sbs_arr_ls()

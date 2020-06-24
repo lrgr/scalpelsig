@@ -11,7 +11,7 @@
 #SBATCH --qos=throughput
 #SBATCH --time=18:00:00                                         # how long you think your job will take to complete; format=hh:mm:ss
 #SBATCH --nodes=1                                               # number of nodes to allocate for your job
-#SBATCH --ntasks=45
+#SBATCH --ntasks=15
 #SBATCH --cpus-per-task=1                                     # request 1 cpu core be reserved per task
 #SBATCH --mem 36gb                                               # memory required by job; if unit is not specified MB will be assumed
 
@@ -22,7 +22,7 @@ module add conda
 module add R/common/3.5.1
 conda activate signature-panel-env
 
-for i in {1..15}; do
+for i in {1..5}; do
     for obj in {1..3}; do
         srun -N 1 -n 1 --mem=35gb --exclusive Rscript run_10k_panel_script.R -s ${1} -t ${2}_it${i} -o ${obj} -w 270 &
     done
