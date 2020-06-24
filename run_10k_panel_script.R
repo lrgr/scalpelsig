@@ -100,20 +100,22 @@ write(panel_windows, file=window_file_name)
 ####################################################
 ####################################################
 
-score_mtx_ls = NULL
-obj_vec=NULL
+#THE PART BELOW IS NOW PERFORMED BY scripts/sbs_mtxs_from_10k_panel_windows.R
 
-gc()
+#score_mtx_ls = NULL
+#obj_vec=NULL
 
-print(paste0(Sys.time(), "    load_10k_sbs_arr_ls()"))
-sbs_arr_ls = load_10k_sbs_arr_ls()
-print(paste0(Sys.time(), "    finished loading."))
+#gc()
 
-panel_df = get_panel_sbs_df(panel_windows, sbs_arr_ls)
+#print(paste0(Sys.time(), "    load_10k_sbs_arr_ls()"))
+#sbs_arr_ls = load_10k_sbs_arr_ls()
+#print(paste0(Sys.time(), "    finished loading."))
 
-sbs_outfile = paste0(GLOBAL_SCRIPT_PANEL_SBS_DIR, "panel_sbs_df_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_", timestamp_tag, ".tsv")
-print(paste0(Sys.time(), "    saving panel sbs matrix to ", sbs_outfile))
+#panel_df = get_panel_sbs_df(panel_windows, sbs_arr_ls)
 
-save_panel_sbs_tsv(panel_df, sbs_outfile)
+#sbs_outfile = paste0(GLOBAL_SCRIPT_PANEL_SBS_DIR, "panel_sbs_df_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_", timestamp_tag, ".tsv")
+#print(paste0(Sys.time(), "    saving panel sbs matrix to ", sbs_outfile))
 
-print(paste0(Sys.time(), "    finished task: run_10k_panel_script.R -s ", sig_num, " -t ", file_tag, " -o ", obj_fn_num, " -w ", panel_windows))
+#save_panel_sbs_tsv(panel_df, sbs_outfile)
+
+#print(paste0(Sys.time(), "    finished task: run_10k_panel_script.R -s ", sig_num, " -t ", file_tag, " -o ", obj_fn_num, " -w ", panel_windows))
