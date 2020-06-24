@@ -1,5 +1,6 @@
 setwd("../..")
 library(optparse)
+source("GLOBAL_CONFIG.R")
 
 option_list = list(
         make_option(c("-t", "--tag"), type="character", default=NULL,
@@ -42,4 +43,5 @@ for (f in files) {
 		
 		write(trunc_panel, outfile)
 	}
+	i = i + 1
 }
