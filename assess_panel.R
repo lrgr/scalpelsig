@@ -125,7 +125,7 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 	panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
 	panel_score_df = add_labels_to_panel_df(panel_score_df, sig_activity_labels)
 
-	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score)) ) )
+	return(as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score, quiet=TRUE)) ) )
 }
 
 
@@ -170,12 +170,17 @@ panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=
 }
 
 # get auroc for each baseline panel
-compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
+compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, eval_mode="auroc", debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	}
 
-	baseline_sig_est_files = list.files(GLOBAL_BASELINE_SIG_EST_DIR)
+	if (eval_mode != "auroc" & eval_mode != "aupr") {
+		stop(paste0("Error in compute_baseline_auroc(): eval_mode most be either \'auroc\' or \'aupr\'. Recieved ", eval_mode, " instead."))
+	}
+	
+	baseline_sig_est_files = list.files(GLOBAL_SCRIPT_BASELINE_SIG_EST)
+	if (debug) { print(paste0("found ", length(baseline_sig_est_files), " baseline panels.")) }
 
 	auc_vec = numeric(length(baseline_sig_est_files))
 
@@ -183,18 +188,28 @@ compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, debug=
 
 	for (i in 1:length(auc_vec)) {
 		if (debug) { print(paste0(i, "/", length(auc_vec))) }
-		panel_sig_infile = paste0(GLOBAL_BASELINE_SIG_EST_DIR, baseline_sig_est_files[i])
-		panel_sig_df = load_sig_estimate_df(panel_sig_infile)
+		panel_sig_infile = paste0(GLOBAL_SCRIPT_BASELINE_SIG_EST, baseline_sig_est_files[i])
+		panel_sig_df = load_sig_estimate_df(panel_sig_infile, replace_na=TRUE)
 		
 		panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
 		panel_score_df = add_labels_to_panel_df(panel_score_df, sig_activity_labels)
 
-		auc_vec[i] = as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score, quiet=TRUE)) )
+		if (eval_mode=="auroc") {
+			curr_score = as.numeric( auc(roc(panel_score_df$Active, panel_score_df$Score, quiet=TRUE)) )
+		} else if (eval_mode=="aupr") {
+			fg = panel_score_df[ panel_score_df$Active==TRUE, "Score"]
+			bg = panel_score_df[ panel_score_df$Active==FALSE, "Score"] 
+			pr <- pr.curve(scores.class0=fg, scores.class1=bg) # from PRROC package, entries [[2]] and [[3]] give aupr computed by 2 different methods
+			
+			curr_score = pr[[3]]
+		}
+
+		auc_vec[i] = curr_score
+		names(auc_vec)[i] = panel_sig_infile
 	}
 
 	return(auc_vec)
 }
-
 
 
 

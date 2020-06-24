@@ -523,9 +523,9 @@ obj_fn_class_balance <- function(region, pos_samps, neg_samps, score_mtx) {
 
 
 # estimate pval by comparing to baseline panel AUROC
-est_pval <- function(obj_auroc, sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
+est_pval <- function(obj_auroc, sig_num, test_set, global_sig_df=NULL, eval_mode="auroc", debug=FALSE) {
 	if (debug) {print("running compute_baseline_auroc()")}
-	baseline_aurocs = compute_baseline_auroc(sig_num, test_set, global_sig_df)
+	baseline_aurocs = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=eval_mode)
 
 	if (debug) {print(paste0("Estimating p-val from ", length(baseline_aurocs), " random panels."))}
 	if (debug) {print(paste0("Summary statistics for random panel AUROCs - ",

@@ -1,10 +1,29 @@
 setwd("..")
 source("projection_score.R")
+library(optparse)
+
+option_list = list(
+	make_option(c("-t", "--tags"), type="character", default=NULL,
+		help="tags, separated by comma, of panels to be evaluated (e.g. \"first_batch,second_batch,third_batch\")", metavar="character"),
+	make_option(c("-e", "--evalmode"), type="character", default=NULL,
+		help="evaluation mode for panels. Can be set to \"auroc\" or \"aupr\".", metavar="character")
+);
+
+opt_parser = OptionParser(option_list=option_list)
+opt = parse_args(opt_parser)
+
+file_tags = opt$tags
+if (is.null(file_tags)) {
+        stop("No file_tags recieved (command line -t ). Please supply file_tags.")
+}
+
+EVAL_MODE = opt$evalmode
+if (is.null(EVAL_MODE)) {
+	stop("No EVAL_MODE recieved (command line -e ). Please supply an EVAL_MODE (either \"auroc\" or \"aupr\")" )
+}
 
 
 DEBUG_FLAG = TRUE
-
-EVAL_MODE = "auroc"
 
 
 # given a file name as a string fn, returns a list with information about the data that generated the file
@@ -33,7 +52,7 @@ parse_sig_est_file_name <- function(fn) {
 	timestamp = sub(".*obj[0-9]+_", "", s)
 	ret[["timestamp"]] = timestamp
 
-	s = sub("panel_sbs_df_", "", fn)
+	s = sub("panel_sig_est_", "", fn)
 	tag = sub("_it[0-9]+_.*", "", s)
 	ret[["tag"]] = tag
 
@@ -41,9 +60,15 @@ parse_sig_est_file_name <- function(fn) {
 }
 
 
-file_tag = "test_run"
-files = list.files(GLOBAL_SCRIPT_PANEL_SIG_EST_DIR, pattern= paste0(".*", file_tag, ".*") )
-print(paste0(Sys.time(), "    found ", length(files), " files containing the tag: ", file_tag))
+tag_ls = strsplit(file_tags, ",")[[1]]
+
+files = character(0)
+for (file_tag in tag_ls) {
+	curr_files = as.character(list.files(GLOBAL_SCRIPT_PANEL_SIG_EST_DIR, pattern= paste0(".*", file_tag, ".*") ))
+	files = c(files, curr_files)
+	print(paste0(Sys.time(), "    found ", length(curr_files), " files containing the tag: ", file_tag))
+}
+print(paste0(Sys.time(), "    found ", length(files), " files in total."))
 
 global_sig_df = load_nz_sig_estimates(norm=TRUE)
 
@@ -57,9 +82,18 @@ Eval.Mode = character(n)
 Eval.Result = numeric(n)
 File.Name = character(n)
 
+MSK.IMPACT.Result = numeric(n)
+WES.Result = numeric(n)
+
+Est.Pval = numeric(n)
+Baseline.Med = numeric(n)
+Baseline.Max = numeric(n)
+BP.Max.File = character(n)
+
 i = 1
+# loop through each file containing the 
 for (f in files) {
-	print(paste0(i, "/", length(files))) 
+	print(paste0(Sys.time(), "    ", i, "/", length(files))) 
 	#print(f)
 	info = parse_sig_est_file_name(f)
 	
@@ -87,21 +121,59 @@ for (f in files) {
 
 	sig_num = info[["sig_num"]]
 
+	msk_impact_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "msk_test_panel_sig_est.tsv")
+	wes_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "gencode_exon_panel_sig_est.tsv")
+
+	# COMPUTE AUROC / AUPR OF PANEL
 	if (EVAL_MODE=="auroc") {
 		result = compute_panel_auroc(sig_num, test_set, sig_est_outfile, global_sig_df)
+		
+		# benchmark panel results
+		msk_result = compute_panel_auroc(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+		wes_result = compute_panel_auroc(sig_num, test_set, wes_sig_est, global_sig_df)
 	} else if (EVAL_MODE=="aupr") {
-		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df)
+		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df)		
+
+		# benchmark panel results
+		msk_result = compute_panel_aupr(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+		wes_result = compute_panel_aupr(sig_num, test_set, wes_sig_est, global_sig_df)
 	} else {
 		stop("eval_mode was something other than \'auroc\' or \'aupr\'")
 	}
 
 	Eval.Result[i] = result
+	MSK.IMPACT.Result[i] = msk_result
+	WES.Result[i] = wes_result
+
+	# random baseline computation
+	#print("computing baseline vec")
+	#baseline_vec = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=EVAL_MODE)
+	#print("done.")
+	
+	#baseline_med = median(baseline_vec)
+	#baseline_max = max(baseline_vec)
+	
+	#max_index = which(baseline_vec == baseline_max)
+	#max_bp = names(baseline_vec)[max_index]
+	#BP.Max.File[i] = max_bp
+
+	#n_better = sum(baseline_vec >= result)
+	#pval = n_better / length(baseline_vec)
+	
+	#Est.Pval[i] = pval
+	#Baseline.Med[i] = baseline_med
+	#Baseline.Max[i] = baseline_max
 
 	i = i + 1
 }
 
-results_df = data.frame(Eval.Result, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name)
-results_df = results_df[order(Signature, Obj.Fn, Iteration), ]
+# results df without random baseline
+results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+
+# results df with random baseline
+#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+
+results_df = results_df[order(Signature, Obj.Fn, -Eval.Result), ]
 
 results_timestamp = format(Sys.time(), "%d-%b-%Y_%H-%M")
 
