@@ -116,3 +116,11 @@ save_summary_df <- function(results_df_infile, outfile=NULL) {
 	print(paste0("writing summary df to ", outfile))
 	write.table(summary_df, file=outfile, sep="\t", quote=FALSE)
 }
+
+print_guide <- function() {
+	print("How to use this file:") 
+	print("1) list_results_files()")
+	print("2) run save_summary_df() on paste0(GLOBAL_SCRIPT_OUT, <file name from step 1>)")
+}
+
+print_guide()
