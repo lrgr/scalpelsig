@@ -113,13 +113,13 @@ for (f in files) {
 	Eval.Mode[i] = EVAL_MODE
 	File.Name[i] = f
 
-	Panel.Size = info[["size"]]
+	Panel.Size[i] = info[["size"]]
 
 	#print(info)
 
 	sig_est_outfile = paste0(GLOBAL_SIZE_TEST_SIG_EST_DIR, f)	
 
-	s = sub("trunc_p_sig_est_size[0-9]+_", "", f) # strip "panel_sig_est_" from front of the string
+	s = sub("trunc_sig_est_size[0-9]+_", "", f) # strip "panel_sig_est_" from front of the string
 	
 	t = sub("_[0-9]+-.*", "", s) # remove the timestamp tag and trailing '.tsv'
 	t = sub("_obj[0-9]+", "", t) # remove '_objNN' from filename
