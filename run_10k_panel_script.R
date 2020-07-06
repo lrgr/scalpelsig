@@ -26,9 +26,9 @@ opt = parse_args(opt_parser);
 
 # control variables for the script
 
-sig_num = opt$signum #TODO: pass this from parser
-obj_fn_num = opt$objectivefn #TODO: pass this from parser
-windows_in_panel = opt$windowsinpanel #TODO: pass this from parser
+sig_num = opt$signum
+obj_fn_num = opt$objectivefn 
+windows_in_panel = opt$windowsinpanel
 file_tag = opt$tag
 
 if (is.null(sig_num) | is.null(obj_fn_num) | is.null(windows_in_panel) | is.null(file_tag)) {
@@ -91,7 +91,7 @@ print(paste0(Sys.time(), "    computing objective score vector"))
 obj_vec = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn, global_sig_df)
 
 panel_windows = names( top_n(obj_vec, windows_in_panel) )
-window_file_name = paste0(GLOBAL_SCRIPT_PANEL_WINDOWS_DIR, "panel_windows_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_", timestamp_tag, ".txt")
+window_file_name = paste0(GLOBAL_SCRIPT_PANEL_WINDOWS_DIR, "panel_windows_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_nwin", windows_in_panel, "_", timestamp_tag, ".txt")
 
 print(paste0(Sys.time(), "    saving top ", panel_windows, " windows at ", window_file_name))
 # CHECKPOINT 1: SAVING PANEL WINDOWS
