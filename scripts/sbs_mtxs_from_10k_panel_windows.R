@@ -31,6 +31,7 @@ i = 1
 for (f in files) {
 	print( paste0(Sys.time(), "    ", i, "/",  length(files)) )
 	panel_windows = scan(paste0(GLOBAL_SCRIPT_PANEL_WINDOWS_DIR, f), what=character(), quiet=TRUE)
+	
 	panel_df = get_panel_sbs_df(panel_windows, sbs_arr_ls_10k)
 
 	s = sub("panel_windows_", "", f) #trim 'panel_windows_' prefix from file name
