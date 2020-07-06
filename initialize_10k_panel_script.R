@@ -9,9 +9,11 @@ option_list = list(
 	make_option(c("-t", "--tag"), type="character", default=NULL, 
 			help="tag to refer downstream scripts to the correct training sets", metavar="character"),
 	make_option(c("-g", "--siggroup"), type="numeric", default=NULL,
-			help="specifies which group of signatures to generate test/train sets for. 1 or 2 (see documentation)", metavar="character"),
+			help="specifies which group of signatures to generate test/train sets for. 1 or 2 (see documentation)", metavar="integer"),
 	make_option(c("-n", "--numiters"), type="numeric", default=NULL,
-			help="specifies the number of test/train sets to generate for each signature.", metavar="character")
+			help="specifies the number of test/train sets to generate for each signature.", metavar="integer")
+	#make_option(c("-s", "--sizepanel"), type="numeric", default=NULL,
+			#help="specifies the number of 10 kb windows in the panel.", metavar="integer")
 ); 
 
 
@@ -24,21 +26,23 @@ opt = parse_args(opt_parser);
 file_tag = opt$tag
 sig_group = opt$siggroup
 num_iters = opt$numiters
+#num_windows = opt$sizepanel
 
 
-if (is.null(file_tag) | is.null(sig_group) | is.null(num_iters)) {
+if (is.null(file_tag) | is.null(sig_group) | is.null(num_iters) ) {
 	print("One of the control variables was not supplied: ")
 	print(paste0("file_tag: ", file_tag))
 	print(paste0("sig_group: ", sig_group))
 	print(paste0("num_iters: ", num_iters))
+	#print(paste0("num_windows: ", num_windows)
 	stop("Please supply all the control variables to run the script.")
 }
 
 ##############################
 ##############################
 
-if (sig_group==1) { sig_vec = c(2, 3, 5, 9, 13, 16) } #class-balanced signatures (computed with COSMIC v2 1-30)
-if (sig_group==2) { sig_vec = c(1, 8, 18, 30) } # class imbalanced signatures (computed with COSMIC v2 1-30)
+#if (sig_group==1) { sig_vec = c(2, 3, 5, 9, 13, 16) } #class-balanced signatures (computed with COSMIC v2 1-30)
+#if (sig_group==2) { sig_vec = c(1, 8, 18, 30) } # class imbalanced signatures (computed with COSMIC v2 1-30)
 if (sig_group==3) { sig_vec = c(2, 3, 13) } # NEW class-balanced signatures (computed with COSMIC v2 breast cancer sigs)
 if (sig_group==4) { sig_vec = c(1, 5, 8, 18, 30)} # NEW class-inbalanced signatures (COSMIC v2 breast cancer sigs)
 
