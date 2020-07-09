@@ -146,11 +146,11 @@ for (f in files) {
 	WES.Result[i] = wes_result
 
 	# random baseline computation
-	#print("computing baseline vec")
-	#baseline_vec = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=EVAL_MODE)
-	#print("done.")
+	print("computing baseline vec")
+	baseline_vec = compute_baseline_aupr(sig_num, test_set, global_sig_df)
+	print("done.")
 	
-	#baseline_med = median(baseline_vec)
+	baseline_med = median(baseline_vec)
 	#baseline_max = max(baseline_vec)
 	
 	#max_index = which(baseline_vec == baseline_max)
@@ -161,22 +161,22 @@ for (f in files) {
 	#pval = n_better / length(baseline_vec)
 	
 	#Est.Pval[i] = pval
-	#Baseline.Med[i] = baseline_med
+	Baseline.Med[i] = baseline_med
 	#Baseline.Max[i] = baseline_max
 
 	i = i + 1
 }
 
 # results df without random baseline
-results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
 
 # results df with random baseline
-#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+results_df = data.frame(Eval.Result, Baseline.Med, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
 
 results_df = results_df[order(Signature, Obj.Fn, -Eval.Result), ]
 
 results_timestamp = format(Sys.time(), "%d-%b-%Y_%H-%M")
 
-results_df_outfile = paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_", results_timestamp, ".tsv")
+results_df_outfile = paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_withrandom_", results_timestamp, ".tsv")
 
 write.table(results_df, file=results_df_outfile, sep="\t", quote=FALSE)
