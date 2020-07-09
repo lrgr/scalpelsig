@@ -169,14 +169,22 @@ panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=
 	return(auroc_vec)
 }
 
+compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
+	return(compute_baseline_eval(sig_num, test_set, global_sig_df, "auroc", debug))
+}
+
+compute_baseline_aupr <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
+	return(compute_baseline_eval(sig_num, test_set, global_sig_df, "aupr", debug))
+}
+
 # get auroc for each baseline panel
-compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, eval_mode="auroc", debug=FALSE) {
+compute_baseline_eval <- function(sig_num, test_set, global_sig_df, eval_mode, debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	}
 
 	if (eval_mode != "auroc" & eval_mode != "aupr") {
-		stop(paste0("Error in compute_baseline_auroc(): eval_mode most be either \'auroc\' or \'aupr\'. Recieved ", eval_mode, " instead."))
+		stop(paste0("Error in compute_baseline_eval(): eval_mode most be either \'auroc\' or \'aupr\'. Recieved ", eval_mode, " instead."))
 	}
 	
 	baseline_sig_est_files = list.files(GLOBAL_SCRIPT_BASELINE_SIG_EST)
