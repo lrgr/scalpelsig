@@ -2,6 +2,18 @@
 
 source("GLOBAL_CONFIG.R")
 
+
+
+print_guide <- function() {
+	print("How to use this file:") 
+	print("1) list_results_files()")
+	print("2) run save_summary_df() on paste0(GLOBAL_SCRIPT_OUT, <file name from step 1>)")
+}
+
+print_guide()
+
+
+
 # example:
 # load_panel_results_df(paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_15-Jun-2020_13-57.tsv"))
 load_panel_results_df <- function(infile) {
@@ -17,7 +29,7 @@ list_results_files <- function() {
 # get medians of the relevant chunks of the results
 # i.e., subset the df by Signature, and within each signature by objective function
 # take the median result (auroc/aupr) for the obtained panel, MSK-IMPACT, and WES of each subset, and record them
-median_results_df <- function(df, verbose=2) {
+median_results_df <- function(df, with_baseline=FALSE, verbose=2) {
 	sigs = sort(unique(df$Signature))
 	n_sigs = length(sigs)	
 
@@ -36,6 +48,10 @@ median_results_df <- function(df, verbose=2) {
 	Signature = numeric(n_sigs)
 	Eval.Mode = character(n_sigs)
 
+	if (with_baseline) {
+		Baseline.Med = numeric(n_sigs)
+	}
+
 
 	# iterate through signatures
 	i = 1
@@ -47,8 +63,9 @@ median_results_df <- function(df, verbose=2) {
 		curr_eval_mode = as.character(sig_df$Eval.Mode)
 		if (length( unique(curr_eval_mode) ) != 1) {
 			print("Sanity check failed:")
-			print(paste0("Signature ", s, " contained ", length(unique(curr_eval_mode)), " distinct entries for Eval.Mode"))
+			print(paste0("Signature ", s, " contained ", length(unique(curr_eval_mode)), " distinct entries for Eval.Mode"))	
 			print(unique(curr_eval_mode))
+			print(paste0("But it does not make sense to take the median across different evaluation metrics. Please supply a df such that each signature has only one eval_mode (either auroc OR aupr)."))
 			stop()
 		}
 		em = curr_eval_mode[1]
@@ -61,6 +78,14 @@ median_results_df <- function(df, verbose=2) {
 		obj1_res = obj1_df$Eval.Result
 		obj2_res = obj2_df$Eval.Result
 		obj3_res = obj3_df$Eval.Result
+
+		if (with_baseline) {
+			# test sets are the same across objective functions so one will suffice
+			o1_bl = obj1_df$Baseline.Med
+			bl_med = median(o1_bl)
+
+			Baseline.Med[i] = bl_med
+		}
 
 		# the obj1, 2, and 3 dfs have the same test sets, so the benchmark panels repeat their results
 		# so it is sufficient to just take 1 of the obj dfs.
@@ -86,23 +111,28 @@ median_results_df <- function(df, verbose=2) {
 		
 		Signature[i] = s
 
-		i = i + 1	
+		i = i + 1
 	}
 	
-	results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
-	
+	if (!with_baseline) {
+		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+	} else {
+		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, Baseline.Med, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+	}
+
 	return(results_df)
 }
 
 
-save_summary_df <- function(results_df_infile, outfile=NULL) {
+
+save_summary_df <- function(results_df_infile, with_baseline=FALSE, outfile=NULL) {
 	print(paste0("Loading panel results df from ", results_df_infile))
 	df = load_panel_results_df(results_df_infile)
 
 	print("results df dimensions: ")
 	print(dim(df))
 	
-	summary_df = median_results_df(df)
+	summary_df = median_results_df(df, with_baseline=with_baseline)
 	
 	
 	if (is.null(outfile)) {
@@ -117,10 +147,3 @@ save_summary_df <- function(results_df_infile, outfile=NULL) {
 	write.table(summary_df, file=outfile, sep="\t", quote=FALSE)
 }
 
-print_guide <- function() {
-	print("How to use this file:") 
-	print("1) list_results_files()")
-	print("2) run save_summary_df() on paste0(GLOBAL_SCRIPT_OUT, <file name from step 1>)")
-}
-
-print_guide()
