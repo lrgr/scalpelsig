@@ -5,7 +5,7 @@ library(optparse)
 
 option_list = list(
 	make_option(c("-t", "--tag"), type="character", default=NULL,
-                        help="tag to refer downstream scripts to the correct training sets", metavar="character"),
+                        help="tag to refer downstream scripts to the correct training sets", metavar="character")
 );
 
 opt_parser = OptionParser(option_list=option_list)
@@ -14,6 +14,7 @@ opt = parse_args(opt_parser)
 file_tag = opt$tag
 num_iters = opt$numiters
 num_windows = opt$sizepanel
+verbose = 2
 
 if (is.null(file_tag)) {
 	stop("No file_tag recieved (command line -t ). Please supply a file_tag.")
@@ -39,7 +40,7 @@ for (f in files) {
 
 	s = sub("gp_panel_windows_", "", f) #trim 'panel_windows_' prefix from file name
 	s = sub(".txt", "", s) #trim ".txt" from file name
-	outfile = paste0(GLOBAL_SCRIPT_PANEL_SBS_DIR, "gp_sbs_df_", s, ".tsv")
+	outfile = paste0(GLOBAL_GP_SBS_DIR, "gp_sbs_df_", s, ".tsv")
 
 	if (verbose >= 1) { print(paste0(Sys.time(), "    saving panel sbs matrix to file: ", outfile)) }	
 

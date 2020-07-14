@@ -40,6 +40,8 @@ if (is.null(file_tag) | is.null(num_iters) ) {
         stop("Please supply all the control variables to run the script.")
 }
 
+global_sig_df = load_nz_sig_estimates(norm=TRUE)
+samp_names = as.character(global_sig_df$Patient)
 
 iter = 1
 for (i in 1:num_iters) {

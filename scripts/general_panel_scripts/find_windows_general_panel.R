@@ -100,7 +100,7 @@ obj_vec = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn, global_
 panel_windows = names( top_n(obj_vec, windows_in_panel) )
 window_file_name = paste0(GLOBAL_GP_IND_WIN_DIR, "indsig_panel_windows_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_nwin", windows_in_panel, "_", timestamp_tag, ".txt")
 
-print(paste0(Sys.time(), "    saving top ", panel_windows, " windows at ", window_file_name))
+print(paste0(Sys.time(), "    saving top ", length(panel_windows), " windows at ", window_file_name))
 # CHECKPOINT 1: SAVING PANEL WINDOWS
 write(panel_windows, file=window_file_name)
 

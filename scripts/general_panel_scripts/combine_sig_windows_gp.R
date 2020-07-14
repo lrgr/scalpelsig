@@ -2,8 +2,6 @@
 # and saves the names of those windows to text files.
 # This script will look at those panels, take the top windows from them, and integrate them into a single general panel.
 
-verbose = 4
-
 
 setwd("../..")
 source("projection_score.R")
@@ -16,7 +14,9 @@ option_list = list(
         make_option(c("-n", "--numiters"), type="numeric", default=NULL,
                         help="number of random interations", metavar="integer"),
         make_option(c("-s", "--sizepanel"), type="numeric", default=NULL,
-                        help="number of windows in the panel total", metavar="integer")
+                        help="number of windows in the panel total", metavar="integer"),
+	make_option(c("-v", "--verbose"), type="numeric", default=2,
+			help="Level of verbosity, can be set 1-4", metavar="integer")
 );
 
 opt_parser = OptionParser(option_list=option_list)
@@ -25,6 +25,7 @@ opt = parse_args(opt_parser)
 file_tag = opt$tag
 num_iters = opt$numiters
 num_windows = opt$sizepanel
+verbose = opt$verbose
 
 if (is.null(file_tag)) {
         stop("No file_tag recieved (command line -t ). Please supply a file_tag.")
@@ -37,10 +38,10 @@ if (is.null(num_windows)) {
         stop("No num_windows recieved (command line -s ). Please supply num_windows.")
 }
 
-print(paste0(Sys.time(), "    loading 10kb sbs array"))
-sbs_arr_ls_10k = load_10k_sbs_arr_ls()
-print(paste0(Sys.time(), "    done."))
-print(paste0(Sys.time(), "    saving sbs matrices for panels with file_tag: ", file_tag))
+#print(paste0(Sys.time(), "    loading 10kb sbs array"))
+#sbs_arr_ls_10k = load_10k_sbs_arr_ls()
+#print(paste0(Sys.time(), "    done."))
+#print(paste0(Sys.time(), "    saving sbs matrices for panels with file_tag: ", file_tag))
 
 files = list.files(GLOBAL_GP_IND_WIN_DIR, pattern= paste0(".*", file_tag, ".*") )
 print(paste0(Sys.time(), "    found ", length(files), " files containing the tag: ", file_tag))
@@ -74,13 +75,13 @@ add_x_unique <- function(windows_so_far, new_panel, x) {
 }
 
 
-for (o in 1:3) {
+for (o in 2) {
 	# separate the panel files based on objective function
-	obj_file_set = regmatches(files, regexpr(paste0("_obj", o, "_"), files))
+	obj_file_set = regmatches(files, regexpr(paste0(".*_obj", o, "_.*"), files))
 
 	for (i in 1:num_iters) {
         	# get the windows of each individual signature that correspond to this test/train set
-        	it_files = regmatches(obj_file_set, regexpr(paste0("_it", i, "_"), obj_file_set))
+        	it_files = regmatches(obj_file_set, regexpr(paste0(".*_it", i, "_.*"), obj_file_set))
 
 		n_sigs = length(it_files)
 	
