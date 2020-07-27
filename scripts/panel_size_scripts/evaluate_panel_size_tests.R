@@ -77,6 +77,7 @@ for (file_tag in tag_ls) {
 print(paste0(Sys.time(), "    found ", length(files), " files in total."))
 
 global_sig_df = load_nz_sig_estimates(norm=TRUE)
+no_norm_global_sig_df = load_nz_sig_estimates(norm=FALSE)
 
 n = length(files)
 Signature = numeric(n)
@@ -97,6 +98,14 @@ Est.Pval = numeric(n)
 Baseline.Med = numeric(n)
 Baseline.Max = numeric(n)
 BP.Max.File = character(n)
+
+Norm.Spearman = numeric(n)
+MSK.N.Spearman = numeric(n)
+WES.N.Spearman = numeric(n)
+
+Raw.Spearman = numeric(n)
+MSK.R.Spearman = numeric(n)
+WES.R.Spearman = numeric(n)
 
 i = 1
 # loop through each file containing the 
@@ -155,6 +164,24 @@ for (f in files) {
 	MSK.IMPACT.Result[i] = msk_result
 	WES.Result[i] = wes_result
 
+	#spearman computation
+
+	panel_sp_norm = compute_panel_spearman(sig_num, test_set, sig_est_outfile, global_sig_df)
+	msk_sp_norm = compute_panel_spearman(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+	wes_sp_norm = compute_panel_spearman(sig_num, test_set, wes_sig_est, global_sig_df)
+
+	Norm.Spearman[i] = panel_sp_norm
+	MSK.N.Spearman[i] = msk_sp_norm
+	WES.N.Spearman[i] = wes_sp_norm
+
+	panel_sp_nonorm = compute_panel_spearman(sig_num, test_set, sig_est_outfile, no_norm_global_sig_df)
+	msk_sp_nonorm = compute_panel_spearman(sig_num, test_set, msk_impact_sig_est, no_norm_global_sig_df)
+	wes_sp_nonorm = compute_panel_spearman(sig_num, test_set, wes_sig_est, no_norm_global_sig_df)
+
+	Raw.Spearman[i] = panel_sp_nonorm
+	MSK.R.Spearman[i] = msk_sp_nonorm
+	WES.R.Spearman[i] = wes_sp_nonorm
+
 	# random baseline computation
 	#print("computing baseline vec")
 	#baseline_vec = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=EVAL_MODE)
@@ -178,12 +205,12 @@ for (f in files) {
 }
 
 # results df without random baseline
-results_df = data.frame(Panel.Size, Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+results_df = data.frame(Panel.Size, Raw.Spearman, MSK.R.Spearman, WES.R.Spearman, Norm.Spearman, MSK.N.Spearman, WES.N.Spearman, Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
 
 # results df with random baseline
 #results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
 
-results_df = results_df[order(Signature, Obj.Fn, -Panel.Size, -Eval.Result), ]
+results_df = results_df[order(Signature, Obj.Fn, -Panel.Size, -Raw.Spearman), ]
 
 results_timestamp = format(Sys.time(), "%d-%b-%Y_%H-%M")
 

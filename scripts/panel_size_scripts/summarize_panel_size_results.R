@@ -45,6 +45,20 @@ st_median_results_df <- function(df, verbose=2) {
 	Eval.Mode = character(n_sigs * n_sizes)
 	Panel.Size = numeric(n_sigs * n_sizes)
 
+	Obj1.Raw.Sp = numeric(n_sigs * n_sizes)
+	Obj2.Raw.Sp = numeric(n_sigs * n_sizes)
+	Obj3.Raw.Sp = numeric(n_sigs * n_sizes)
+
+	MSK.Raw.Sp = numeric(n_sigs * n_sizes)
+	WES.Raw.Sp = numeric(n_sigs * n_sizes)
+
+	Obj1.Norm.Sp = numeric(n_sigs * n_sizes)
+	Obj2.Norm.Sp = numeric(n_sigs * n_sizes)
+	Obj3.Norm.Sp = numeric(n_sigs * n_sizes)
+
+	MSK.Norm.Sp = numeric(n_sigs * n_sizes)
+	WES.Norm.Sp = numeric(n_sigs * n_sizes)
+
 
 	# iterate through signatures
 	i = 1
@@ -101,12 +115,49 @@ st_median_results_df <- function(df, verbose=2) {
 			Signature[i] = s
 			Panel.Size[i] = curr_size
 
+			# correlation measures
+			if ("Raw.Spearman" %in% colnames(df)) {
+				obj1_rsp = median(obj1_df$Raw.Spearman)
+				obj2_rsp = median(obj2_df$Raw.Spearman)
+				obj3_rsp = median(obj3_df$Raw.Spearman)
+
+				msk_rsp = median(obj1_df$MSK.R.Spearman)
+				wes_rsp = median(obj1_df$WES.R.Spearman)
+
+				Obj1.Raw.Sp[i] = obj1_rsp
+				Obj2.Raw.Sp[i] = obj2_rsp
+				Obj3.Raw.Sp[i] = obj3_rsp
+
+				MSK.Raw.Sp[i] = msk_rsp
+				WES.Raw.Sp[i] = wes_rsp
+
+				obj1_nsp = median(obj1_df$Norm.Spearman)
+				obj2_nsp = median(obj2_df$Norm.Spearman)
+				obj3_nsp = median(obj3_df$Norm.Spearman)
+				
+				msk_nsp = median(obj1_df$MSK.N.Spearman)
+				wes_nsp = median(obj1_df$WES.N.Spearman)
+
+				Obj1.Norm.Sp[i] = obj1_nsp
+				Obj2.Norm.Sp[i] = obj2_nsp
+				Obj3.Norm.Sp[i] = obj3_nsp
+
+				MSK.Norm.Sp[i] = msk_nsp
+				WES.Norm.Sp[i] = wes_nsp
+				
+			}
+
+
 			i = i + 1
 		}
 	}
 	
-	results_df = data.frame(Signature, Panel.Size, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
-	
+	if ("Raw.Spearman" %in% colnames(df)) {
+		results_df = data.frame(Signature, Panel.Size, Obj1.Raw.Sp, Obj2.Raw.Sp, Obj3.Raw.Sp, MSK.Raw.Sp, WES.Raw.Sp, Obj1.Norm.Sp, Obj2.Norm.Sp, Obj3.Norm.Sp, MSK.Norm.Sp, WES.Norm.Sp, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+	} else {
+		results_df = data.frame(Signature, Panel.Size, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+	}	
+
 	return(results_df)
 }
 
