@@ -9,7 +9,7 @@ option_list = list(
 	make_option(c("-t", "--tag"), type="character", default=NULL, 
 			help="tag to refer downstream scripts to the correct training sets", metavar="character"),
 	make_option(c("-g", "--siggroup"), type="numeric", default=NULL,
-			help="specifies which group of signatures to generate test/train sets for. 1 or 2 (see documentation)", metavar="integer"),
+			help="specifies which group of signatures to generate test/train sets for. 3 or 4 (see documentation)", metavar="integer"),
 	make_option(c("-n", "--numiters"), type="numeric", default=NULL,
 			help="specifies the number of test/train sets to generate for each signature.", metavar="integer")
 	#make_option(c("-s", "--sizepanel"), type="numeric", default=NULL,

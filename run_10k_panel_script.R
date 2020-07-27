@@ -17,7 +17,7 @@ option_list = list(
 			help="controls which objective function the panel will use, can be 1, 2, or 3", metavar="character"),
 	make_option(c("-w", "--windowsinpanel"), type="numeric", default=NULL,
 			help="number of windows to be included in the panel", metavar="character"),
-	make_option(c("-a", "--activitiythreshold"), type="numeric", default=0.05,
+	make_option(c("-a", "--activitythreshold"), type="numeric", default=0.05,
 			help="The percentage of mutations in a sample which determine whether the sample is defined as active for that signature. Default is 0.05 (i.e. if Sig X contributes at least 5% of the total mutations in a sample, that sample is active for Sig X).", metavar="numeric")
 );
 
@@ -43,6 +43,9 @@ if (is.null(sig_num) | is.null(obj_fn_num) | is.null(windows_in_panel) | is.null
 	stop("Please supply all the control variables to run this script.")
 }
 
+if (is.null(act_thresh)) {
+	stop("act_thresh was NULL, which means something is wrong.")
+}
 
 
 #####################################################
