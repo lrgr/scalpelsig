@@ -34,7 +34,7 @@ i = 1
 for (f in files) {
 	print( paste0(Sys.time(), "    ", i, "/",  length(files)) )
 
-	sbs_infile = paste0(GLOBAL_SCRIPT_PANEL_SBS_DIR, f)
+	sbs_infile = paste0(GLOBAL_GP_SBS_DIR, f)
 
 	
 
