@@ -24,6 +24,10 @@ list_results_files <- function() {
 	return(list.files(GLOBAL_SCRIPT_OUT, pattern=".tsv"))
 }
 
+list_gp_results_files <- function() {
+	return(list.files(GLOBAL_GENERAL_PANEL_DIR, pattern=".tsv"))
+}
+
 
 # given results data frame df,
 # get medians of the relevant chunks of the results
@@ -147,3 +151,34 @@ save_summary_df <- function(results_df_infile, with_baseline=FALSE, outfile=NULL
 	write.table(summary_df, file=outfile, sep="\t", quote=FALSE)
 }
 
+
+
+
+################# GENERAL PANEL RESULTS SUMMARY #################
+
+
+# single_panel_df should be the results from a SINGLE PANEL, e.g. a subset of the results df that shares the same File.Name
+gp_msk_comparison_vec <- function(single_panel_df) {
+	rs = single_panel_df$Eval.Result
+	msk = single_panel_df$MSK.IMPACT.Result
+	sigs = paste0("Sig.", single_panel_df$Signature)
+	
+	comp = rs - msk
+	names(comp) = sigs
+	return(comp)
+}
+
+gp_comparison_df <- function(gp_res_df) {
+	Panel.File = unique(as.character(gp_res_df$File.Name))
+
+	ret = c()
+
+	# get each individual panel from gp_res_df
+	for (f in Panel.File) {
+		p_df = gp_res_df[ gp_res_df$File.Name == f, ]
+		comp_vec = gp_msk_comparison_vec(p_df)
+		ret = rbind(ret, comp_vec)
+	}
+	ret = as.data.frame(ret)
+	ret = cbind(ret, Panel.File)
+}

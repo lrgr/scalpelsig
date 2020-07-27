@@ -97,6 +97,15 @@ add_labels_to_panel_df <- function(panel_score_df, sig_activity_labels) {
 	return(panel_score_df)
 }
 
+add_exposures_to_panel_df <- function(panel_score_df, sig_exposure_labels) {
+	panel_score_df$Global.Exposure = numeric(nrow(panel_score_df))
+	test_set = as.character(panel_score_df$Patient)
+
+	for (p in test_set) {
+		panel_score_df[p, "Global.Exposure"] = sig_exposure_labels[p]
+	}
+	return(panel_score_df)
+}
 
 
 # get labels for signature activity in all patients
@@ -105,6 +114,15 @@ get_sig_activity_labels <- function(sig_num, global_sig_df, thresh=0.05) {
 	sig_name = paste0("Signature.", sig_num)
 
 	ret = global_sig_df[ , sig_name] >= thresh
+	names(ret) = global_sig_df$Patient
+	return(ret)
+}
+
+# get exposure without thresholding
+get_sig_exposure_labels <- function(sig_num, global_sig_df) {
+	sig_name = paste0("Signature.", sig_num)
+
+	ret = global_sig_df[ , sig_name]
 	names(ret) = global_sig_df$Patient
 	return(ret)
 }
@@ -148,6 +166,22 @@ compute_panel_aupr <- function(sig_num, test_set, sig_est_infile, global_sig_df=
 	return(pr[[3]])
 }
 
+compute_panel_spearman <- function(sig_num, test_set, sig_est_infile, global_sig_df=NULL, debug=FALSE) {
+	if (is.null(global_sig_df)) {
+		# should this be norm'd?
+		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	sig_exposure_labels = get_sig_exposure_labels(sig_num, global_sig_df)
+	
+	panel_sig_df = load_sig_estimate_df(sig_est_infile, replace_na=TRUE)
+
+	panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
+	panel_score_df = add_exposures_to_panel_df(panel_score_df, sig_exposure_labels)
+
+	test_cor = cor(panel_score_df$Score, panel_score_df$Global.Exposure, method="spearman")
+	return(test_cor)
+}
 
 
 # this is used to evaulate the performance of the MSK IMPACT and WES panels against the proper test sets of each
