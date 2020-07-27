@@ -43,6 +43,9 @@ if (is.null(sig_num) | is.null(obj_fn_num) | is.null(windows_in_panel) | is.null
 	stop("Please supply all the control variables to run this script.")
 }
 
+if (is.null(act_thresh)) {
+	stop("act_thresh was NULL, which means something is wrong.")
+}
 
 
 #####################################################
