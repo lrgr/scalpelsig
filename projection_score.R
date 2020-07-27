@@ -446,7 +446,7 @@ get_sig_activity_labels <- function(sig_num, global_sig_df=NULL, thresh=0.05) {
 }
 
 # returns a vector which contains the objective function score for each region of the genome
-compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn=NULL, global_sig_df=NULL, debug=TRUE) {
+compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn=NULL, global_sig_df=NULL, activation_thresh=0.05, debug=TRUE) {
 	
 	if (is.null(score_mtx_ls)) {
 		if (debug) {print("compute_obj_score_ps() recieved no score_mtx_ls, loading...")}
@@ -463,7 +463,7 @@ compute_obj_score_ps <- function(sig_num, train_samps, score_mtx_ls=NULL, obj_fn
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	}
 
-	activity_vec = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+	activity_vec = get_sig_activity_labels(sig_num, global_sig_df, activation_thresh) #default thresh is 5%
 
 
 	train_act_vec = activity_vec[train_samps]

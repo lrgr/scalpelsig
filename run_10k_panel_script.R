@@ -16,7 +16,9 @@ option_list = list(
 	make_option(c("-o", "--objectivefn"), type="numeric", default=NULL, 
 			help="controls which objective function the panel will use, can be 1, 2, or 3", metavar="character"),
 	make_option(c("-w", "--windowsinpanel"), type="numeric", default=NULL,
-			help="number of windows to be included in the panel", metavar="character")
+			help="number of windows to be included in the panel", metavar="character"),
+	make_option(c("-a", "--activitiythreshold"), type="numeric", default=0.05,
+			help="The percentage of mutations in a sample which determine whether the sample is defined as active for that signature. Default is 0.05 (i.e. if Sig X contributes at least 5% of the total mutations in a sample, that sample is active for Sig X).", metavar="numeric")
 );
 
 opt_parser = OptionParser(option_list=option_list)
@@ -30,6 +32,7 @@ sig_num = opt$signum
 obj_fn_num = opt$objectivefn 
 windows_in_panel = opt$windowsinpanel
 file_tag = opt$tag
+act_thresh = opt$activitythreshold
 
 if (is.null(sig_num) | is.null(obj_fn_num) | is.null(windows_in_panel) | is.null(file_tag)) {
 	print("One of the control variables was not given: ")
@@ -83,12 +86,10 @@ global_sig_df = load_nz_sig_estimates(norm=TRUE)
 
 #samp_names = as.character(global_sig_df$Patient)
 
-#test_train = tt_stratified_split(sig_num, samp_names, .10, global_sig_df)
-#train_set = test_train[[2]] #TODO: load this from file for standardization
 
 print(paste0(Sys.time(), "    computing objective score vector"))
 
-obj_vec = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn, global_sig_df)
+obj_vec = compute_obj_score_ps(sig_num, train_set, score_mtx_ls, obj_fn, global_sig_df, activation_thresh = act_thresh)
 
 panel_windows = names( top_n(obj_vec, windows_in_panel) )
 window_file_name = paste0(GLOBAL_SCRIPT_PANEL_WINDOWS_DIR, "panel_windows_",  file_tag, "_sig", sig_num, "_obj", obj_fn_num, "_nwin", windows_in_panel, "_", timestamp_tag, ".txt")
