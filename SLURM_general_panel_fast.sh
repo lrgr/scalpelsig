@@ -23,7 +23,7 @@ module add R/common/3.5.1
 conda activate signature-panel-env
 
 for i in {1..5}; do
-    srun -N 1 -n 1 --mem=35gb --exclusive Rscript fast_find_windows_gp.R -s ${1} -t ${2}_it${i} -o 2 -w 250 &
+    srun -N 1 -n 1 --mem=35gb --exclusive Rscript fast_find_windows_gp.R -s ${1} -t ${2}_it${i} -o 1 -w 250 &
 done
 
 wait

@@ -11,7 +11,7 @@
 #SBATCH --qos=throughput
 #SBATCH --time=18:00:00                                         # how long you think your job will take to complete; format=hh:mm:ss
 #SBATCH --nodes=1                                               # number of nodes to allocate for your job
-#SBATCH --ntasks=12
+#SBATCH --ntasks=15
 #SBATCH --cpus-per-task=1                                     # request 1 cpu core be reserved per task
 #SBATCH --mem 36gb                                               # memory required by job; if unit is not specified MB will be assumed
 

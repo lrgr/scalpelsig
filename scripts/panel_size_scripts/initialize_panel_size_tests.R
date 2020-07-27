@@ -39,7 +39,7 @@ for (f in files) {
 
 		s = sub("panel_windows_", "", f)		
 
-		outfile = paste0(GLOBAL_SIZE_TEST_WINDOWS_DIR, "trunc_panel_windows_size", n, "_", f)
+		outfile = paste0(GLOBAL_SIZE_TEST_WINDOWS_DIR, "trunc_panel_windows_size", n, "_", s)
 		
 		write(trunc_panel, outfile)
 	}
