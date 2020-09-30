@@ -31,7 +31,9 @@ In the *outer directory* run:
 Rscript run_10k_panel_script.R -t <FILETAG> -g <SIGNATURE GROUP (see below)> -n <NUMBER OF TRIALS IN EXPERIMENT>
 ```
 Some explanation on the input fields:
-- blah
+- the FILETAG is a string that identifies files associated with this run. Later down the line, file names will be parsed with some regexes that are not completely foolproof, so it is possible to mess up the workflow with a badly chosen FILETAG. Try to avoid putting `sig` plus a number, `obj` plus a number, `it` plus a number, or anything that looks like a date. A string of all caps letters e.g. `FIRSTBATCH` should be fine.
+- the SIGNATURE GROUP is sort of an artifact of how I batched experiments earlier, and the fact that we use random stratified sampling to obtain a test/train split (i.e. for each signature we guarantee that the number of active samples in the test set is proportional to the number of active samples in the cohort). It's no longer important to explain why the groups are what they are, but just know that **-g needs to be either 3 or 4**. If you input 3, it will generate test/train sets for signatures 2, 3, and 13; if you give it 4 it will generate test/train sets for signatures 1, 5, 8, 18, and 30.
+- the NUMBER OF TRIALS is the number of test/train sets it will generate per signature in the group chosen by the -g parameter. **If you set this to 15, the SLURM script will not terminate with the resources alotted to it. Instead, break the experiment into 3 batches (each with its own initialization) and set -n to 5 for each batch.**
 
 ## Evaluation Protocol Step 2: Computation of Window Scoring Function w/ SLURM
 Currently the workflow is to:
