@@ -7,7 +7,7 @@
 
 
 ### 0.1: Download Data and Preprocess
-(TODO: revisit this -- is the info below still current? What additional data needs to be downloaded (**e.g. COSMIC sigs**)? Are there additional preprocessing steps that need to happen before the main body of code is run?)
+(TODO: revisit this -- is the info below still current? What additional data needs to be downloaded (**e.g. COSMIC sigs, MSK-IMPACT panel regions**)? Are there additional preprocessing steps that need to happen before the main body of code is run?)
 
 Use https://github.com/lrgr/sigma to get Nik-Zainal data
 Download signature estimation repo
