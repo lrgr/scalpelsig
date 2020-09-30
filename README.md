@@ -30,7 +30,7 @@ This file is saved in `data/nz_sig_est_and_window_counts.tsv`
 ## Evaluation Protocol Step 1: Initialize Test & Train Sets 
 In the *outer directory* run:
 ``` 
-Rscript run_10k_panel_script.R -t <FILETAG> -g <SIGNATURE GROUP (see below)> -n <NUMBER OF TRIALS IN EXPERIMENT>
+Rscript initialize_10k_panel_script.R -t <FILETAG> -g <SIGNATURE GROUP (see below)> -n <NUMBER OF TRIALS IN EXPERIMENT>
 ```
 Some explanation on the input fields:
 - the FILETAG is a string that identifies files associated with this run. Later down the line, file names will be parsed with some regexes that are not completely foolproof, so it is possible to mess up the workflow with a badly chosen FILETAG. Try to avoid putting `sig` plus a number, `obj` plus a number, `it` plus a number, or anything that looks like a date. A string of all caps letters e.g. `FIRSTBATCH` should be fine.
@@ -40,13 +40,13 @@ Some explanation on the input fields:
 Notes:
 So here is an example of what I would run to initialize an experiment with 15 trials of all 8 signatures -- I apologize for its jankiness:
 ```
-Rscript run_10k_panel_script.R -t FIRST_BATCH_A -g 3 -n 5
-Rscript run_10k_panel_script.R -t SEC_BATCH_A -g 3 -n 5
-Rscript run_10k_panel_script.R -t THIRD_BATCH_A -g 3 -n 5
+Rscript initialize_10k_panel_script.R -t FIRST_BATCH_A -g 3 -n 5
+Rscript initialize_10k_panel_script.R -t SEC_BATCH_A -g 3 -n 5
+Rscript initialize_10k_panel_script.R -t THIRD_BATCH_A -g 3 -n 5
 
-Rscript run_10k_panel_script.R -t FIRST_BATCH_B -g 4 -n 5
-Rscript run_10k_panel_script.R -t SEC_BATCH_B -g 4 -n 5
-Rscript run_10k_panel_script.R -t THIRD_BATCH_B -g 4 -n 5
+Rscript initialize_10k_panel_script.R -t FIRST_BATCH_B -g 4 -n 5
+Rscript initialize_10k_panel_script.R -t SEC_BATCH_B -g 4 -n 5
+Rscript initialize_10k_panel_script.R -t THIRD_BATCH_B -g 4 -n 5
 ```
 
 ## Evaluation Protocol Step 2: Computation of Window Scoring Function w/ SLURM
@@ -94,4 +94,38 @@ sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 30
 ```
 
 ## Evaluation Protocol Step 3: Obtaining 96-Category Mutation Count Matrices from Panel Regions
+- enter the `\scripts` directory (i.e. do `cd scripts`)
+- do `Rscript sbs_mtxs_from_10k_panel_windows.R -t <FILETAG>`
+
+Notes: so for this we do one run for each distinct FILETAG in the example:
+```
+Rscript sbs_mtxs_from_10k_panel_windows.R -t FIRST_BATCH_A
+Rscript sbs_mtxs_from_10k_panel_windows.R -t SEC_BATCH_A
+Rscript sbs_mtxs_from_10k_panel_windows.R -t THIRD_BATCH_A
+
+Rscript sbs_mtxs_from_10k_panel_windows.R -t FIRST_BATCH_B
+Rscript sbs_mtxs_from_10k_panel_windows.R -t SEC_BATCH_B
+Rscript sbs_mtxs_from_10k_panel_windows.R -t THIRD_BATCH_B
+```
+
+## Evaluation Protocol Step 4: Extracting Signatures from Panel Regions
+**IMPORTANT: with the current code, it is necessary to deactivate the conda environment from this repo, then activate the SignatureEstimator environment for this step, because the following script calls SignatureEstimator from the command line. Hopefully in the future this will not be necessary though.**
+- do `conda deactivate signature-panel-env`
+- do `conda activate signature-estimation-py-env`
+- do `Rscript estimate_10k_panel_signatures.R -t <FILETAG>`
+
+Notes: SignatureEstimator will throw a bunch of warnings in this step due to the sparsity of mutations in the panel regions, but that is normal. Continuing the example, we have:
+
+```
+Rscript estimate_10k_panel_signatures.R -t FIRST_BATCH_A
+Rscript estimate_10k_panel_signatures.R -t SEC_BATCH_A
+Rscript estimate_10k_panel_signatures.R -t THIRD_BATCH_A
+
+Rscript estimate_10k_panel_signatures.R -t FIRST_BATCH_B
+Rscript estimate_10k_panel_signatures.R -t SEC_BATCH_B
+Rscript estimate_10k_panel_signatures.R -t THIRD_BATCH_B
+```
+
+## Evaluation Protocol Step 5: Compute Evaluation Metrics (AUPR / Spearman Correlation)
+
 blah
