@@ -6,7 +6,9 @@ option_list = list(
 	make_option(c("-t", "--tags"), type="character", default=NULL,
 		help="tags, separated by comma, of panels to be evaluated (e.g. \"first_batch,second_batch,third_batch\")", metavar="character"),
 	make_option(c("-e", "--evalmode"), type="character", default=NULL,
-		help="evaluation mode for panels. Can be set to \"auroc\" or \"aupr\".", metavar="character")
+		help="evaluation mode for panels. Can be set to \"auroc\" or \"aupr\".", metavar="character"),
+	make_option(c("-r", "--randombaseline"), type="logical", default=FALSE,
+                help="flag for whether to compute the random baseline. Setting to TRUE will significantly increase the run time.", metavar="logical")
 );
 
 opt_parser = OptionParser(option_list=option_list)
@@ -21,6 +23,8 @@ EVAL_MODE = opt$evalmode
 if (is.null(EVAL_MODE)) {
 	stop("No EVAL_MODE recieved (command line -e ). Please supply an EVAL_MODE (either \"auroc\" or \"aupr\")" )
 }
+
+baseline_flag = opt$randombaseline
 
 
 DEBUG_FLAG = TRUE
@@ -96,8 +100,11 @@ WES.Result = numeric(n)
 
 Est.Pval = numeric(n)
 Baseline.Med = numeric(n)
+Baseline.Mean = numeric(n)
 Baseline.Max = numeric(n)
 BP.Max.File = character(n)
+BP.Spearman.Med = numeric(n)
+BP.Spearman.Mean = numeric(n)
 
 Norm.Spearman = numeric(n)
 MSK.N.Spearman = numeric(n)
@@ -106,6 +113,8 @@ WES.N.Spearman = numeric(n)
 Raw.Spearman = numeric(n)
 MSK.R.Spearman = numeric(n)
 WES.R.Spearman = numeric(n)
+
+
 
 i = 1
 # loop through each file containing the 
@@ -182,33 +191,48 @@ for (f in files) {
 	MSK.R.Spearman[i] = msk_sp_nonorm
 	WES.R.Spearman[i] = wes_sp_nonorm
 
-	# random baseline computation
-	#print("computing baseline vec")
-	#baseline_vec = compute_baseline_auroc(sig_num, test_set, global_sig_df, eval_mode=EVAL_MODE)
-	#print("done.")
+	if (baseline_flag & (info[["size"]] == 250) & (info[["obj_num"]] == 2) & (info[["sig_num"]] %in% c(2,3,8,13,18,30)))  {
+		# random baseline computation
+		print("computing baseline vec")
+		print(paste0("Size: ", info[["size"]], "    Obj: ", info[["obj_num"]], "    Sig: ", sig_num)) 
+		baseline_vec = compute_baseline_aupr(sig_num, test_set, global_sig_df)
+		print("done.")
 	
-	#baseline_med = median(baseline_vec)
-	#baseline_max = max(baseline_vec)
-	
-	#max_index = which(baseline_vec == baseline_max)
-	#max_bp = names(baseline_vec)[max_index]
-	#BP.Max.File[i] = max_bp
+		baseline_med = median(baseline_vec)
+		baseline_mean = mean(baseline_vec)
+		#baseline_max = max(baseline_vec)
 
-	#n_better = sum(baseline_vec >= result)
-	#pval = n_better / length(baseline_vec)
+		print("computing spearman vec")
+		b_spearman_vec = compute_baseline_spearman(sig_num, test_set, global_sig_df)
+		print("done")
+		bp_sp_med = median(b_spearman_vec)
+		bp_sp_mean = mean(b_spearman_vec)			
+
+		#max_index = which(baseline_vec == baseline_max)
+		#max_bp = names(baseline_vec)[max_index]
+		#BP.Max.File[i] = max_bp
+
+		#n_better = sum(baseline_vec >= result)
+		#pval = n_better / length(baseline_vec)
 	
-	#Est.Pval[i] = pval
-	#Baseline.Med[i] = baseline_med
-	#Baseline.Max[i] = baseline_max
+		#Est.Pval[i] = pval
+		Baseline.Med[i] = baseline_med
+		Baseline.Mean[i] = baseline_mean
+
+		BP.Spearman.Med[i] = bp_sp_med
+		BP.Spearman.Mean[i] = bp_sp_mean
+	}
 
 	i = i + 1
 }
 
-# results df without random baseline
-results_df = data.frame(Panel.Size, Raw.Spearman, MSK.R.Spearman, WES.R.Spearman, Norm.Spearman, MSK.N.Spearman, WES.N.Spearman, Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
-
-# results df with random baseline
-#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Est.Pval, Baseline.Med, Baseline.Max, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+if (baseline_flag) {
+	# results df with random baseline
+	results_df = data.frame(Panel.Size, Signature, Raw.Spearman, MSK.R.Spearman, WES.R.Spearman, BP.Spearman.Med, BP.Spearman.Mean, Eval.Result, MSK.IMPACT.Result, WES.Result, Baseline.Med, Baseline.Mean, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
+} else {
+	# results df without random baseline
+	results_df = data.frame(Panel.Size, Raw.Spearman, MSK.R.Spearman, WES.R.Spearman, Norm.Spearman, MSK.N.Spearman, WES.N.Spearman, Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+}
 
 results_df = results_df[order(Signature, Obj.Fn, -Panel.Size, -Raw.Spearman), ]
 

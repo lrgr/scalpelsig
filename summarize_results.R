@@ -52,8 +52,25 @@ median_results_df <- function(df, with_baseline=FALSE, verbose=2) {
 	Signature = numeric(n_sigs)
 	Eval.Mode = character(n_sigs)
 
+	Percent.Active = numeric(n_sigs)
+
+	Obj1.R.Spearman = numeric(n_sigs)
+	Obj2.R.Spearman = numeric(n_sigs)
+	Obj3.R.Spearman = numeric(n_sigs)
+	
+	MSK.R.Spearman = numeric(n_sigs)
+	WES.R.Spearman = numeric(n_sigs)
+
+	Obj1.N.Spearman = numeric(n_sigs)
+	Obj2.N.Spearman = numeric(n_sigs)
+	Obj3.N.Spearman = numeric(n_sigs)
+
+	MSK.N.Spearman = numeric(n_sigs)
+	WES.N.Spearman = numeric(n_sigs)
+
 	if (with_baseline) {
 		Baseline.Med = numeric(n_sigs)
+		Baseline.Spearman = numeric(n_sigs)
 	}
 
 
@@ -89,6 +106,13 @@ median_results_df <- function(df, with_baseline=FALSE, verbose=2) {
 			bl_med = median(o1_bl)
 
 			Baseline.Med[i] = bl_med
+
+			if ("BP.Spearman.Med" %in% colnames(df)) {
+				o1_bl_sp = obj1_df$BP.Spearman.Med
+				bl_sp_med = median(o1_bl_sp)
+
+				Baseline.Spearman[i] = bl_sp_med
+			}
 		}
 
 		# the obj1, 2, and 3 dfs have the same test sets, so the benchmark panels repeat their results
@@ -115,13 +139,44 @@ median_results_df <- function(df, with_baseline=FALSE, verbose=2) {
 		
 		Signature[i] = s
 
+		if ("Percent.Active" %in% colnames(df)) {
+			Percent.Active[i] = obj1_df$Percent.Active[1]
+		}
+
+		# spearman score
+
+		if ("Raw.Spearman" %in% colnames(df)) {
+			Obj1.R.Spearman[i] = median(obj1_df$Raw.Spearman)
+			Obj2.R.Spearman[i] = median(obj2_df$Raw.Spearman)
+			Obj3.R.Spearman[i] = median(obj3_df$Raw.Spearman)
+
+			MSK.R.Spearman[i] = median(obj1_df$MSK.R.Spearman)
+			WES.R.Spearman[i] = median(obj1_df$WES.R.Spearman)
+		}
+		if ("Norm.Spearman" %in% colnames(df)) {
+			Obj1.N.Spearman[i] = median(obj1_df$Norm.Spearman)
+			Obj2.N.Spearman[i] = median(obj2_df$Norm.Spearman)
+			Obj3.N.Spearman[i] = median(obj3_df$Norm.Spearman)
+		
+			MSK.N.Spearman[i] = median(obj1_df$MSK.N.Spearman)
+			WES.N.Spearman[i] = median(obj1_df$WES.N.Spearman)
+		}
+
 		i = i + 1
 	}
 	
 	if (!with_baseline) {
-		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Percent.Active, Eval.Mode)
+		if ("Raw.Spearman" %in% colnames(df)) {
+			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, Obj3.R.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Percent.Active, Eval.Mode)
+		}
+
 	} else {
-		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, Baseline.Med, MSK.IMPACT.Score, WES.Score, Eval.Mode)
+		results_df = data.frame(Signature, Obj1.Score, Obj2.Score, Obj3.Score, Baseline.Med, MSK.IMPACT.Score, WES.Score, Percent.Active, Eval.Mode)
+		if ("Raw.Spearman" %in% colnames(df)) {
+			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, Obj3.R.Spearman, Baseline.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.Score, Obj2.Score, Obj3.Score, Baseline.Med, MSK.IMPACT.Score, WES.Score, Percent.Active, Eval.Mode)
+	}
+	
 	}
 
 	return(results_df)

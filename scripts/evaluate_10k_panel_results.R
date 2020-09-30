@@ -6,7 +6,13 @@ option_list = list(
 	make_option(c("-t", "--tags"), type="character", default=NULL,
 		help="tags, separated by comma, of panels to be evaluated (e.g. \"first_batch,second_batch,third_batch\")", metavar="character"),
 	make_option(c("-e", "--evalmode"), type="character", default=NULL,
-		help="evaluation mode for panels. Can be set to \"auroc\" or \"aupr\".", metavar="character")
+		help="evaluation mode for panels. Can be set to \"auroc\" or \"aupr\".", metavar="character"),
+	make_option(c("-a", "--activationthresh"), type="numeric", default=0.05,
+		help="activation threshold for determining whether a signature is active in a sample.", metavar="numeric"),
+	make_option(c("-o", "--outtag"), type="character", default="",
+		help="tag for output .tsv file", metavar="character"),
+	make_option(c("-r", "--randombaseline"), type="logical", default=FALSE,
+		help="flag for whether to compute the random baseline. Setting to TRUE will significantly increase the run time.", metavar="logical")
 );
 
 opt_parser = OptionParser(option_list=option_list)
@@ -22,6 +28,9 @@ if (is.null(EVAL_MODE)) {
 	stop("No EVAL_MODE recieved (command line -e ). Please supply an EVAL_MODE (either \"auroc\" or \"aupr\")" )
 }
 
+act_thresh = opt$activationthresh
+outfile_tag = opt$outtag
+baseline_flag = opt$randombaseline
 
 DEBUG_FLAG = TRUE
 
@@ -71,6 +80,8 @@ for (file_tag in tag_ls) {
 print(paste0(Sys.time(), "    found ", length(files), " files in total."))
 
 global_sig_df = load_nz_sig_estimates(norm=TRUE)
+no_norm_global_sig_df = load_nz_sig_estimates(norm=FALSE)
+
 
 n = length(files)
 Signature = numeric(n)
@@ -84,11 +95,24 @@ File.Name = character(n)
 
 MSK.IMPACT.Result = numeric(n)
 WES.Result = numeric(n)
+Act.Thresh = numeric(n)
+Percent.Active = numeric(n)
 
 Est.Pval = numeric(n)
 Baseline.Med = numeric(n)
+Baseline.Mean = numeric(n)
 Baseline.Max = numeric(n)
 BP.Max.File = character(n)
+BP.Spearman.Med = numeric(n)
+BP.Spearman.Mean = numeric(n)
+
+Norm.Spearman = numeric(n)
+MSK.N.Spearman = numeric(n)
+WES.N.Spearman = numeric(n)
+
+Raw.Spearman = numeric(n)
+MSK.R.Spearman = numeric(n)
+WES.R.Spearman = numeric(n)
 
 i = 1
 # loop through each file containing the 
@@ -105,6 +129,8 @@ for (f in files) {
 	Eval.Mode[i] = EVAL_MODE
 	File.Name[i] = f
 
+	Act.Thresh[i] = act_thresh
+
 	#print(info)
 
 	sig_est_outfile = paste0(GLOBAL_SCRIPT_PANEL_SIG_EST_DIR, f)	
@@ -113,6 +139,7 @@ for (f in files) {
 	
 	t = sub("_[0-9]+-.*", "", s) # remove the timestamp tag and trailing '.tsv'
 	t = sub("_obj[0-9]+", "", t) # remove '_objNN' from filename
+	t = sub("_nwin[0-9]+", "", t) # remove "_nwinNNN" from filename
 	tt_file = paste0(GLOBAL_SCRIPT_TEST_TRAIN_DIR, "test_train_", t, ".rds")
 	test_train = readRDS(tt_file)
 	test_set = test_train[[1]]
@@ -121,22 +148,24 @@ for (f in files) {
 
 	sig_num = info[["sig_num"]]
 
+	Percent.Active[i] = get_percent_active(sig_num, global_sig_df, act_thresh)
+
 	msk_impact_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "msk_test_panel_sig_est.tsv")
 	wes_sig_est = paste0(GLOBAL_PANEL_SIG_EST_DIR, "gencode_exon_panel_sig_est.tsv")
 
 	# COMPUTE AUROC / AUPR OF PANEL
 	if (EVAL_MODE=="auroc") {
-		result = compute_panel_auroc(sig_num, test_set, sig_est_outfile, global_sig_df)
+		result = compute_panel_auroc(sig_num, test_set, sig_est_outfile, global_sig_df, activation_thresh=act_thresh)
 		
 		# benchmark panel results
-		msk_result = compute_panel_auroc(sig_num, test_set, msk_impact_sig_est, global_sig_df)
-		wes_result = compute_panel_auroc(sig_num, test_set, wes_sig_est, global_sig_df)
+		msk_result = compute_panel_auroc(sig_num, test_set, msk_impact_sig_est, global_sig_df, activation_thresh=act_thresh)
+		wes_result = compute_panel_auroc(sig_num, test_set, wes_sig_est, global_sig_df, activation_thresh=act_thresh)
 	} else if (EVAL_MODE=="aupr") {
-		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df)		
+		result = compute_panel_aupr(sig_num, test_set, sig_est_outfile, global_sig_df, activation_thresh=act_thresh)		
 
 		# benchmark panel results
-		msk_result = compute_panel_aupr(sig_num, test_set, msk_impact_sig_est, global_sig_df)
-		wes_result = compute_panel_aupr(sig_num, test_set, wes_sig_est, global_sig_df)
+		msk_result = compute_panel_aupr(sig_num, test_set, msk_impact_sig_est, global_sig_df, activation_thresh=act_thresh)
+		wes_result = compute_panel_aupr(sig_num, test_set, wes_sig_est, global_sig_df, activation_thresh=act_thresh)
 	} else {
 		stop("eval_mode was something other than \'auroc\' or \'aupr\'")
 	}
@@ -145,38 +174,73 @@ for (f in files) {
 	MSK.IMPACT.Result[i] = msk_result
 	WES.Result[i] = wes_result
 
-	# random baseline computation
-	print("computing baseline vec")
-	baseline_vec = compute_baseline_aupr(sig_num, test_set, global_sig_df)
-	print("done.")
-	
-	baseline_med = median(baseline_vec)
-	#baseline_max = max(baseline_vec)
-	
-	#max_index = which(baseline_vec == baseline_max)
-	#max_bp = names(baseline_vec)[max_index]
-	#BP.Max.File[i] = max_bp
 
-	#n_better = sum(baseline_vec >= result)
-	#pval = n_better / length(baseline_vec)
+	#spearman computation
+
+        panel_sp_norm = compute_panel_spearman(sig_num, test_set, sig_est_outfile, global_sig_df)
+        msk_sp_norm = compute_panel_spearman(sig_num, test_set, msk_impact_sig_est, global_sig_df)
+        wes_sp_norm = compute_panel_spearman(sig_num, test_set, wes_sig_est, global_sig_df)
+
+        Norm.Spearman[i] = panel_sp_norm
+        MSK.N.Spearman[i] = msk_sp_norm
+        WES.N.Spearman[i] = wes_sp_norm
+
+        panel_sp_nonorm = compute_panel_spearman(sig_num, test_set, sig_est_outfile, no_norm_global_sig_df)
+        msk_sp_nonorm = compute_panel_spearman(sig_num, test_set, msk_impact_sig_est, no_norm_global_sig_df)
+        wes_sp_nonorm = compute_panel_spearman(sig_num, test_set, wes_sig_est, no_norm_global_sig_df)
+
+        Raw.Spearman[i] = panel_sp_nonorm
+        MSK.R.Spearman[i] = msk_sp_nonorm
+        WES.R.Spearman[i] = wes_sp_nonorm
+
+
+	if (baseline_flag) {
+		# random baseline computation
+		print("computing baseline vec")
+		baseline_vec = compute_baseline_aupr(sig_num, test_set, global_sig_df)
+		print("done.")
 	
-	#Est.Pval[i] = pval
-	Baseline.Med[i] = baseline_med
-	#Baseline.Max[i] = baseline_max
+		baseline_med = median(baseline_vec)
+		baseline_mean = mean(baseline_vec)
+		#baseline_max = max(baseline_vec)
+	
+	
+		#max_index = which(baseline_vec == baseline_max)
+		#max_bp = names(baseline_vec)[max_index]
+		#BP.Max.File[i] = max_bp
+
+		#n_better = sum(baseline_vec >= result)
+		#pval = n_better / length(baseline_vec)
+	
+		#Est.Pval[i] = pval
+		Baseline.Mean[i] = baseline_mean
+		Baseline.Med[i] = baseline_med
+		#Baseline.Max[i] = baseline_max
+
+		b_spearman_vec = compute_baseline_spearman(sig_num, test_set, global_sig_df)
+		b_sp_med = median(b_spearman_vec)
+		b_sp_mean = mean(b_spearman_vec)
+
+		BP.Spearman.Med[i] = b_sp_med
+		BP.Spearman.Mean[i] = b_sp_mean
+	}
 
 	i = i + 1
 }
 
-# results df without random baseline
-#results_df = data.frame(Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Iteration, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
-
-# results df with random baseline
-results_df = data.frame(Eval.Result, Baseline.Med, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Eval.Mode, Iteration, File.Tag, Timestamp.Tag, File.Name, BP.Max.File)
-
-results_df = results_df[order(Signature, Obj.Fn, -Eval.Result), ]
-
 results_timestamp = format(Sys.time(), "%d-%b-%Y_%H-%M")
 
-results_df_outfile = paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_withrandom_", results_timestamp, ".tsv")
+if (baseline_flag==TRUE) {
+	# results df with random baseline
+	results_df = data.frame(Raw.Spearman, MSK.R.Spearman, BP.Spearman.Med, BP.Spearman.Mean, WES.R.Spearman, Eval.Result, Baseline.Med, Baseline.Mean,, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Percent.Active, Act.Thresh, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+	results_df_outfile = paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_", outfile_tag, "_", results_timestamp, ".tsv")
+} else {
+	# results df without random baseline
+	results_df = data.frame(Raw.Spearman, MSK.R.Spearman, WES.R.Spearman, Norm.Spearman, MSK.N.Spearman, WES.N.Spearman, Eval.Result, MSK.IMPACT.Result, WES.Result, Signature, Obj.Fn, Percent.Active, Act.Thresh, Eval.Mode, File.Tag, Timestamp.Tag, File.Name)
+	results_df_outfile = paste0(GLOBAL_SCRIPT_OUT, "panel_results_df_withrandom_", outfile_tag, "_", results_timestamp, ".tsv")
+
+}
+
+results_df = results_df[order(Signature, Obj.Fn, -Eval.Result), ]
 
 write.table(results_df, file=results_df_outfile, sep="\t", quote=FALSE)

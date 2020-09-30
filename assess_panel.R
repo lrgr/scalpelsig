@@ -118,6 +118,11 @@ get_sig_activity_labels <- function(sig_num, global_sig_df, thresh=0.05) {
 	return(ret)
 }
 
+get_percent_active <- function(sig_num, global_sig_df, thresh) {
+	labels = get_sig_activity_labels(sig_num, global_sig_df, thresh)
+	return(sum(labels) / length(labels)) #sum gives number of TRUE entries, so this is #active / #samples.
+}
+
 # get exposure without thresholding
 get_sig_exposure_labels <- function(sig_num, global_sig_df) {
 	sig_name = paste0("Signature.", sig_num)
@@ -131,12 +136,12 @@ get_sig_exposure_labels <- function(sig_num, global_sig_df) {
 # sig_num : integer for which COSMIC signature to assess
 # test_set : vector of sample names
 # infile : file name (with path) for signature estimate .tsv corresponding to the panel
-compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, debug=FALSE) {
+compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, activation_thresh=0.05, debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	}
 
-	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, activation_thresh)
 
 	panel_sig_df = load_sig_estimate_df(infile, replace_na=TRUE)
 
@@ -147,12 +152,12 @@ compute_panel_auroc <- function(sig_num, test_set, infile, global_sig_df=NULL, d
 }
 
 
-compute_panel_aupr <- function(sig_num, test_set, sig_est_infile, global_sig_df=NULL, debug=FALSE) {
+compute_panel_aupr <- function(sig_num, test_set, sig_est_infile, global_sig_df=NULL, activation_thresh=0.05, debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
 	}
 
-	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, activation_thresh)
 	
 	panel_sig_df = load_sig_estimate_df(sig_est_infile, replace_na=TRUE)
 
@@ -184,6 +189,37 @@ compute_panel_spearman <- function(sig_num, test_set, sig_est_infile, global_sig
 }
 
 
+compute_baseline_spearman <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
+	if (is.null(global_sig_df)) {
+		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	baseline_sig_est_files = list.files(GLOBAL_SCRIPT_BASELINE_SIG_EST)
+	if (debug) { print(paste0("found ", length(baseline_sig_est_files), " baseline panels.")) }
+
+	result_vec = numeric(length(baseline_sig_est_files))
+
+	sig_exposure_labels = get_sig_exposure_labels(sig_num, global_sig_df)
+
+	for (i in 1:length(result_vec)) {
+		if (debug) { print(paste0(i, "/", length(result_vec))) }
+
+		panel_sig_infile = paste0(GLOBAL_SCRIPT_BASELINE_SIG_EST, baseline_sig_est_files[i])
+		panel_sig_df = load_sig_estimate_df(panel_sig_infile, replace_na=TRUE)
+	
+		panel_score_df = get_panel_score_df(sig_num, panel_sig_df, test_set)
+		panel_score_df = add_exposures_to_panel_df(panel_score_df, sig_exposure_labels)
+
+		test_cor = cor(panel_score_df$Score, panel_score_df$Global.Exposure, method="spearman")
+		
+		result_vec[i] = test_cor
+		names(result_vec)[i] = panel_sig_infile
+	}
+
+	return(result_vec)
+}
+
+
 # this is used to evaulate the performance of the MSK IMPACT and WES panels against the proper test sets of each
 # panel found by our framework.
 panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=NULL, debug=TRUE) {
@@ -203,18 +239,24 @@ panel_auroc_logged_test_sets <- function(sig_num, sig_est_infile, global_sig_df=
 	return(auroc_vec)
 }
 
-compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
-	return(compute_baseline_eval(sig_num, test_set, global_sig_df, "auroc", debug))
+compute_baseline_auroc <- function(sig_num, test_set, global_sig_df=NULL, activation_thresh=0.05, debug=FALSE) {
+	return(compute_baseline_eval(sig_num, test_set, global_sig_df, activation_thresh, "auroc", debug))
 }
 
-compute_baseline_aupr <- function(sig_num, test_set, global_sig_df=NULL, debug=FALSE) {
-	return(compute_baseline_eval(sig_num, test_set, global_sig_df, "aupr", debug))
+compute_baseline_aupr <- function(sig_num, test_set, global_sig_df=NULL, activation_thresh=0.05, debug=FALSE) {
+	return(compute_baseline_eval(sig_num, test_set, global_sig_df, activation_thresh, "aupr", debug))
 }
 
 # get auroc for each baseline panel
-compute_baseline_eval <- function(sig_num, test_set, global_sig_df, eval_mode, debug=FALSE) {
+compute_baseline_eval <- function(sig_num, test_set, global_sig_df, activation_thresh, eval_mode, debug=FALSE) {
 	if (is.null(global_sig_df)) {
 		global_sig_df = load_nz_sig_estimates(norm=TRUE)
+	}
+
+	if (class(activation_thresh) == "character") {
+		print(paste0("In compute_baseline_eval() the variable \'activation_thresh\' was of type character, with value: ", activation_thresh))
+		print("It should be a float between 0 and 1. This probably means some old code has put variables in the wrong order.")
+		stop("Halting. See error above.")
 	}
 
 	if (eval_mode != "auroc" & eval_mode != "aupr") {
@@ -226,7 +268,7 @@ compute_baseline_eval <- function(sig_num, test_set, global_sig_df, eval_mode, d
 
 	auc_vec = numeric(length(baseline_sig_est_files))
 
-	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, 0.05)
+	sig_activity_labels = get_sig_activity_labels(sig_num, global_sig_df, activation_thresh)
 
 	for (i in 1:length(auc_vec)) {
 		if (debug) { print(paste0(i, "/", length(auc_vec))) }

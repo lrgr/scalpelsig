@@ -39,6 +39,9 @@ st_median_results_df <- function(df, verbose=2) {
 	Obj2.Score = numeric(n_sigs * n_sizes)
 	Obj3.Score = numeric(n_sigs * n_sizes)
 	
+	BP.Mean.Score = numeric(n_sigs * n_sizes)
+	BP.Med.Score = numeric(n_sigs * n_sizes)
+
 	MSK.IMPACT.Score = numeric(n_sigs * n_sizes)
 	WES.Score = numeric(n_sigs * n_sizes)
 	Signature = numeric(n_sigs * n_sizes)
@@ -51,6 +54,9 @@ st_median_results_df <- function(df, verbose=2) {
 
 	MSK.Raw.Sp = numeric(n_sigs * n_sizes)
 	WES.Raw.Sp = numeric(n_sigs * n_sizes)
+
+	BP.Mean.Sp = numeric(n_sigs * n_sizes)
+	BP.Med.Sp = numeric(n_sigs * n_sizes)
 
 	Obj1.Norm.Sp = numeric(n_sigs * n_sizes)
 	Obj2.Norm.Sp = numeric(n_sigs * n_sizes)
@@ -131,20 +137,33 @@ st_median_results_df <- function(df, verbose=2) {
 				MSK.Raw.Sp[i] = msk_rsp
 				WES.Raw.Sp[i] = wes_rsp
 
-				obj1_nsp = median(obj1_df$Norm.Spearman)
-				obj2_nsp = median(obj2_df$Norm.Spearman)
-				obj3_nsp = median(obj3_df$Norm.Spearman)
+				#obj1_nsp = median(obj1_df$Norm.Spearman)
+				#obj2_nsp = median(obj2_df$Norm.Spearman)
+				#obj3_nsp = median(obj3_df$Norm.Spearman)
 				
-				msk_nsp = median(obj1_df$MSK.N.Spearman)
-				wes_nsp = median(obj1_df$WES.N.Spearman)
+				#msk_nsp = median(obj1_df$MSK.N.Spearman)
+				#wes_nsp = median(obj1_df$WES.N.Spearman)
 
-				Obj1.Norm.Sp[i] = obj1_nsp
-				Obj2.Norm.Sp[i] = obj2_nsp
-				Obj3.Norm.Sp[i] = obj3_nsp
+				#Obj1.Norm.Sp[i] = obj1_nsp
+				#Obj2.Norm.Sp[i] = obj2_nsp
+				#Obj3.Norm.Sp[i] = obj3_nsp
 
-				MSK.Norm.Sp[i] = msk_nsp
-				WES.Norm.Sp[i] = wes_nsp
+				#MSK.Norm.Sp[i] = msk_nsp
+				#WES.Norm.Sp[i] = wes_nsp
 				
+			}
+
+			if ("Baseline.Mean" %in% colnames(df)) {
+				
+				o2_s250_df = obj2_df[obj2_df$Panel.Size==250, ] 
+				# baseline only computed for these entries to avoid redundant computation
+
+				BP.Mean.Score[i] = median(o2_s250_df$Baseline.Mean)
+				BP.Med.Score[i] = median(o2_s250_df$Baseline.Med)
+
+				BP.Mean.Sp[i] = median(o2_s250_df$BP.Spearman.Mean)
+				BP.Med.Sp[i] = median(o2_s250_df$BP.Spearman.Med)
+
 			}
 
 
@@ -152,7 +171,10 @@ st_median_results_df <- function(df, verbose=2) {
 		}
 	}
 	
-	if ("Raw.Spearman" %in% colnames(df)) {
+	if ("Baseline.Mean" %in% colnames(df)) {
+		results_df = data.frame(Signature, Panel.Size, Obj2.Raw.Sp, MSK.Raw.Sp, BP.Med.Sp, BP.Mean.Sp, Obj1.Score, Obj2.Score, MSK.IMPACT.Score, BP.Med.Score, BP.Mean.Score, WES.Score, Eval.Mode)
+
+	} else if ("Raw.Spearman" %in% colnames(df)) {
 		results_df = data.frame(Signature, Panel.Size, Obj1.Raw.Sp, Obj2.Raw.Sp, Obj3.Raw.Sp, MSK.Raw.Sp, WES.Raw.Sp, Obj1.Norm.Sp, Obj2.Norm.Sp, Obj3.Norm.Sp, MSK.Norm.Sp, WES.Norm.Sp, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
 	} else {
 		results_df = data.frame(Signature, Panel.Size, Obj1.Score, Obj2.Score, Obj3.Score, MSK.IMPACT.Score, WES.Score, Eval.Mode)
