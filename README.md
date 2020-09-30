@@ -25,6 +25,8 @@ This file is saved in `data/nz_sig_est_and_window_counts.tsv`
 
 **NOTE 9/30/2020: I am sketching the workflow here but this may not be exactly correct -- I do not have access to my lab notebook since I am currently on Northwestern campus due to internet outage, but later this week I plan to update w/ the exact workflow.**
 
+**NOTE 9/30/2020: IMPORTANTLY, there is a necessary directory structure for the output folder and accompanying CONFIG file (not included in repo since it's different for my laptop and my UMD work station) without which, this workflow will not work properly. TODO: need to figure out best practices for generating the output directory and config file generically.**
+
 ## Evaluation Protocol Step 1: Initialize Test & Train Sets 
 In the *outer directory* run:
 ``` 
@@ -35,7 +37,61 @@ Some explanation on the input fields:
 - the SIGNATURE GROUP is sort of an artifact of how I batched experiments earlier, and the fact that we use random stratified sampling to obtain a test/train split (i.e. for each signature we guarantee that the number of active samples in the test set is proportional to the number of active samples in the cohort). It's no longer important to explain why the groups are what they are, but just know that **-g needs to be either 3 or 4**. If you input 3, it will generate test/train sets for signatures 2, 3, and 13; if you give it 4 it will generate test/train sets for signatures 1, 5, 8, 18, and 30.
 - the NUMBER OF TRIALS is the number of test/train sets it will generate per signature in the group chosen by the -g parameter. **If you set this to 15, the SLURM script will not terminate with the resources alotted to it. Instead, break the experiment into 3 batches (each with its own initialization) and set -n to 5 for each batch.**
 
+Notes:
+So here is an example of what I would run to initialize an experiment with 15 trials of all 8 signatures -- I apologize for its jankiness:
+```
+Rscript run_10k_panel_script.R -t FIRST_BATCH_A -g 3 -n 5
+Rscript run_10k_panel_script.R -t SEC_BATCH_A -g 3 -n 5
+Rscript run_10k_panel_script.R -t THIRD_BATCH_A -g 3 -n 5
+
+Rscript run_10k_panel_script.R -t FIRST_BATCH_B -g 4 -n 5
+Rscript run_10k_panel_script.R -t SEC_BATCH_B -g 4 -n 5
+Rscript run_10k_panel_script.R -t THIRD_BATCH_B -g 4 -n 5
+```
+
 ## Evaluation Protocol Step 2: Computation of Window Scoring Function w/ SLURM
 Currently the workflow is to:
 - log in to `cbcbsub00`
-- do `sbatch SLURM_10k_panel_script.sh 
+- do `sbatch SLURM_10k_panel_script.sh <FILETAG> <SIGNATURE>`
+
+Notes: 
+The FILETAG should be the same one given to the initialization function. The SIGNATURE should be a *single* signature. So here are the inputs to continue the example from above, whose jankiness I also apologize for:
+```
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_A 2
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_A 3
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_A 13
+
+
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_A 2
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_A 3
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_A 13
+
+
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_A 2
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_A 3
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_A 13
+
+
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_B 1
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_B 5
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_B 8
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_B 18
+sbatch SLURM_10k_panel_script.sh FIRST_BATCH_B 30
+
+
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_B 1
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_B 5
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_B 8
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_B 18
+sbatch SLURM_10k_panel_script.sh SEC_BATCH_B 30
+
+
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 1
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 5
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 8
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 18
+sbatch SLURM_10k_panel_script.sh THIRD_BATCH_B 30
+```
+
+## Evaluation Protocol Step 3: Obtaining 96-Category Mutation Count Matrices from Panel Regions
+blah
