@@ -27,8 +27,10 @@ This file is saved in `data/nz_sig_est_and_window_counts.tsv`
 
 **NOTE 9/30/2020: IMPORTANTLY, there is a necessary directory structure for the output folder and accompanying CONFIG file (not included in repo since it's different for my laptop and my UMD work station) without which, this workflow will not work properly. TODO: need to figure out best practices for generating the output directory and config file generically.**
 
+**GENERAL NOTE ON RUNTIME: For me it usually takes a day to do steps 1 and 2 (computed on the CBCB cluster), and then another day to do the remaining steps (computed on CBCB workstation / my laptop).**
+
 ## Evaluation Protocol Step 1: Initialize Test & Train Sets 
-In the *outer directory* run:
+In the *main repo directory* run:
 ``` 
 Rscript initialize_10k_panel_script.R -t <FILETAG> -g <SIGNATURE GROUP (see below)> -n <NUMBER OF TRIALS IN EXPERIMENT>
 ```
@@ -128,4 +130,28 @@ Rscript estimate_10k_panel_signatures.R -t THIRD_BATCH_B
 
 ## Evaluation Protocol Step 5: Compute Evaluation Metrics (AUPR / Spearman Correlation)
 
-blah
+- do `conda deactivate signature-estimation-py-env`
+- do `conda activate signature-panel-env`
+- do `Rscript evaluate_10k_panel_results.R -t <FILETAG OR MULTIPLE FILETAGS> -e aupr -o <OUTPUT TAG> -r <RANDOM BASELINE FLAG, PROBABLY SET TO FALSE IF YOU'RE READING THIS> `
+
+Notes: 
+- the FILETAG can be used as before, **OR it can be given a list of FILETAGs to be aggregated into a single output.** This is done using `;` as a separator for the tags, i.e. `TAG1;TAG2;TAG3`
+- the -e option gives the choice between using AUROC and AUPR to evaluate the panels, but this functionality is now deprecated. **TODO: remove this option from the parser**
+- the OUTPUT TAG is a string that marks the output file for a given run.
+- the RANDOM BASELINE FLAG determines whether the random baseline should be evaluated. **Setting this option to TRUE will significantly increase the runtime of this script (on the order of several hours)**, also the current README doesn't tell you how to initialize the random baseline, so for now if you're reading this just set it to FALSE. **TODO: WRITE README FOR RANDOM BASELINE**
+
+So to continue the example, we do:
+
+```
+Rscript evaluate_10k_panel_results.R -t FIRST_BATCH_A;SEC_BATCH_A;THIRD_BATCH_A;FIRST_BATCH_B;SEC_BATCH_B;THIRD_BATCH_B -e aupr -o MY_EXAMPLE_EXPERIMENT -r FALSE
+```
+
+## Evaluation Protocol Step 6: Obtaining Human-Readable Results
+Note: When I wrote the following file, I wasn't sure about the exact way I wanted to compile results, so I wrote a bunch of functions that can be deployed in an interactive R session. Since the protocol that ended up being 'canonical' was very simple, I never ended up writing a streamlined script for it, but loading the code into an interactive R session gives a short description of how to use it. Once again, apologies for jankiness.
+
+- leave the `\scripts` directory
+- In the command line, type `R` to begin an interactive R session
+- in the R session, do `source("summarize_results.R")`
+- Follow the short instructions that get printed.
+
+This will produce a file with the median scoring trial for each signature examined in the experiment. 
