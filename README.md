@@ -1,4 +1,6 @@
-(Informal README, will make more formal later)
+# NOTE TO REVIEWERS (November 8, 2020):
+This repo contains the code we used to implement ScalpelSig, but it is not in its final form. We plan to make updates in the coming weeks and months which should greatly improve the readability and usability of this code, as well as the replicability of our experiments in the paper. Please pardon our dust while we make these improvements. We expect to have a detailed README with steps for running the ScalpelSig workflow in the next 1-2 weeks. 
+
 
 ## Step 0: Initialization
 
