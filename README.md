@@ -58,7 +58,9 @@ The `-t` argument gives the file tag, which is the same file tag as in the previ
 
 ## step 3: find mutations in panel windows
 This step reads the panel windows discovered in the previous step and records the mutation category counts contained inside.
-```Rscript scripts/sbs_mtxs_from_10k_panel_windows.R -t EXAMPLE_EXPERIMENT```
+```
+Rscript scripts/sbs_mtxs_from_10k_panel_windows.R -t EXAMPLE_EXPERIMENT
+```
 Here, and in all future steps, the `-t` tag requires the file tag given in step 1, there is no longer a need to append `_iter<i>` to it.
 
 ## step 4: estimate panel signatures
