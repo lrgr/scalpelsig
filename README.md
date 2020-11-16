@@ -7,21 +7,57 @@ The following instructions will perform panel discovery optimized for assessing 
 ## step 0: preliminary setup
 
 ### 0.1: download the Signature Estimation repository
-``` git clone https://github.com/lrgr/signature-estimation-py.git```
+``` 
+git clone https://github.com/lrgr/signature-estimation-py.git
+```
 
 ### 0.2: modify the config file
 First, open the config file
-``` vim GLOBAL_CONFIG.R ```
+``` 
+vim GLOBAL_CONFIG.R 
+```
 
 Then, replace the line that says 
-``` GLOBAL_PROJECT_DIR = "CHANGE THIS TEXT TO YOUR WORKING DIRECTORY" ```
+``` 
+GLOBAL_PROJECT_DIR = "CHANGE THIS TEXT TO YOUR WORKING DIRECTORY" 
+```
 so that it accurately reflects the path of the repository, i.e.
-``` GLOBAL_PROJECT_DIR = "path/to/scalpelsig_repo/"```
+```
+GLOBAL_PROJECT_DIR = "path/to/scalpelsig_repo/"
+```
 
 ### 0.3: download and unzip data
 UPDATE THIS TEXT
 
 ## step 1: initialize test and train sets
 Now we are ready to begin running the experiments. 
-```Rscript blah```
+```
+Rscript initialize_10k_panel_script.R -t EXAMPLE_EXPERIMENT -g 3 -n 3
+```
+
+## step 2: compute window scoring function on training data
+```
+Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter1 -o 2 -w 250
+Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter2 -o 2 -w 250
+Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter3 -o 2 -w 250
+```
+
+## step 3: find mutations in panel windows
+```Rscript scripts/sbs_mtxs_from_10k_panel_windows.R -t EXAMPLE_EXPERIMENT```
+
+## step 4: estimate panel signatures
+To estimate panel signatures, we use the Signature Estimation package. This requires that we activate the Signature Estimation conda library:
+
+```conda activate signature-estimation-py-env```
+
+Then we call the script to continue the experiment
+
+```Rscript scripts/estimate_10k_panel_signatures.R -t EXAMPLE_EXPERIMENT```
+
+Afterwards, we must deactivate the conda library:
+
+```conda deactivate```
+
+
+
 
