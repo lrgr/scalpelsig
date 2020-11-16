@@ -67,14 +67,14 @@ Rscript scripts/evaluate_10k_panel_results.R -t EXAMPLE_EXPERIMENT -o EXAMPLE_OU
 ## step 6: summarize results across trials
 This step is done in an interactive R session. Begin by writing `R` in the command line. When the R session initializes, run the following commands:
 
-```
+```R
 >source("summarize_results.R")
 >ls <- list_results_files()
 >ls
 ```
 This will list the files in the results directory. Select the file with the desired file tag. In the case of this example, we want `panel_results_df_EXAMPLE_OUTPUT_<timestamp>.tsv` where `<timestamp>` is replaced with a timestamp given by the previous script. If this file is at position 1 in the list, we would run the following to generate the results summary table:
 
-```
+```R
 >save_summary_df( paste0(GLOBAL_SCRIPT_OUT, ls[[1]]) )
 ```
 
