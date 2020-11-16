@@ -7,9 +7,17 @@ The following instructions will perform panel discovery optimized for assessing 
 ## step 0: preliminary setup
 
 ### 0.1: download the Signature Estimation repository
+Run the following command to download the repository:
 ``` 
 git clone https://github.com/lrgr/signature-estimation-py.git
 ```
+The Signature Estimation package uses Anaconda to manage dependencies. Run the following commands to enter the Signature Estimation project directory, build the conda environment, and then return to the ScalpelSig project directory:
+```
+cd signature-estimation-py
+conda env create -f environment.yml
+cd ..
+```
+We will activate the environment later in the workflow.
 
 ### 0.2: modify the config file
 First, open the config file
@@ -32,18 +40,24 @@ UPDATE THIS TEXT
 ## step 1: initialize test and train sets
 Now we are ready to begin running the experiments. 
 ```
-Rscript initialize_10k_panel_script.R -t EXAMPLE_EXPERIMENT -g 3 -n 3
+Rscript initialize_10k_panel_script.R -t EXAMPLE_EXPERIMENT -n 3
 ```
+Here, the `-t` argument gives a file tag, which is used to keep track of experimental trials in the downstream pieces of the workflow. The `-n` argument gives the number of iterations, i.e. the number of trials for each signature. For this example, we have set the number of iterations to 3, though in the paper we perform 15 iterations of each experiment.
 
 ## step 2: compute window scoring function on training data
+This is the most computationally expensive step in the workflow. When we ran the experiments for the paper, we used a cluster to distribute the computation of this step. We use a SLURM script for this purpose, but the script is configured to our local computing setup at the University of Maryland. We recommend that others take similar measures if they would like to fully replicate the results of the paper. The necessary commands (for one out of six signatures, and one out of two alpha settings of ScalpelSig) on our test example are given below.
+
 ```
 Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter1 -o 2 -w 250
 Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter2 -o 2 -w 250
 Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter3 -o 2 -w 250
 ```
+Here, `-t` gives the file tag, which is the same file tag as in the previous step but appended with `_iter<i>` where `<i>` ranges from 1 to the `-n` argument given in the previous step. The `-o` argument selects one of the two parametrizations of alpha shown in the paper -- `-o 1` gives alpha=1, `-o 2` gives alpha=0.5 (the latter is the recommended setting). The `-w` argument gives the number of windows in the panel. In the paper, we use 250 windows in our primary experiments.
 
 ## step 3: find mutations in panel windows
+This step reads the panel windows discovered in the previous step and records the mutation category counts contained inside.
 ```Rscript scripts/sbs_mtxs_from_10k_panel_windows.R -t EXAMPLE_EXPERIMENT```
+Here, and in all future steps, the `-t` tag requires the file tag given in step 1, there is no longer a need to append `_iter<i>` to it.
 
 ## step 4: estimate panel signatures
 To estimate panel signatures, we use the Signature Estimation package. This requires that we activate the Signature Estimation conda library:
@@ -63,6 +77,7 @@ Afterwards, we must deactivate the conda library:
 ```
 Rscript scripts/evaluate_10k_panel_results.R -t EXAMPLE_EXPERIMENT -o EXAMPLE_OUTPUT 
 ```
+Note that in this step `-t` can be given multiple file tags, delimited by `,` in order to aggregate the results of multiple experiments into a single output. In this example we only deal with a single file tag though. The `-o` argument gives the output tag for the results file. This performs essentially the same purpose as the file tag, but if you are aggregating the results of multiple experiments it is handy, as it allows you to demarkate groups of trials.
 
 ## step 6: summarize results across trials
 This step is done in an interactive R session. Begin by writing `R` in the command line. When the R session initializes, run the following commands:
