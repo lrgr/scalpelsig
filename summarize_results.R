@@ -166,15 +166,15 @@ mean_results_df <- function(df, with_baseline=FALSE, verbose=2) {
 	}
 	
 	if (!with_baseline) {
-		results_df = data.frame(Signature, Obj1.AUPR, Obj2.AUPR, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active, Eval.Mode)
+		results_df = data.frame(Signature, Obj1.AUPR, Obj2.AUPR, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active)
 		if ("Raw.Spearman" %in% colnames(df)) {
-			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.AUPR, Obj2.AUPR, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active, Eval.Mode)
+			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.AUPR, Obj2.AUPR, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active)
 		}
 
 	} else {
-		results_df = data.frame(Signature, Obj1.AUPR, Obj2.AUPR, Baseline.Med, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active, Eval.Mode)
+		results_df = data.frame(Signature, Obj1.AUPR, Obj2.AUPR, Baseline.Med, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active)
 		if ("Raw.Spearman" %in% colnames(df)) {
-			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, Baseline.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.AUPR, Obj2.AUPR, Baseline.Med, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active, Eval.Mode)
+			results_df = data.frame(Signature, Obj1.R.Spearman, Obj2.R.Spearman, Baseline.Spearman, MSK.R.Spearman, WES.R.Spearman, Obj1.AUPR, Obj2.AUPR, Baseline.Med, MSK.IMPACT.AUPR, WES.AUPR, Percent.Active)
 	}
 	
 	}
@@ -203,7 +203,7 @@ save_summary_df <- function(results_df_infile, with_baseline=FALSE, outfile=NULL
 	}
 	
 	print(paste0("writing summary df to ", outfile))
-	write.table(summary_df, file=outfile, sep="\t", quote=FALSE)
+	write.table(summary_df, file=outfile, sep="\t", quote=FALSE, row.names=FALSE)
 }
 
 

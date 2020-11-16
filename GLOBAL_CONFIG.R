@@ -1,10 +1,8 @@
-# this file will contain all of the global variables for workstation so that
-# I don't have to keep resetting them
+# contains global variables for file locations
+
+GLOBAL_PROJECT_DIR = "CHANGE THIS TEXT TO YOUR WORKING DIRECTORY"
 
 GLOBAL_NCORES = 3
-
-#GLOBAL_PROJECT_DIR = "/fs/cbcb-lab/mdml/users/franzese/projects/signature-panel/fresh-scalpelsig/"
-GLOBAL_PROJECT_DIR = "~/projects/fresh-scalpelsig/fresh-scalpelsig/"
 
 GLOBAL_DATA_DIR = paste0(GLOBAL_PROJECT_DIR, "data/")
 GLOBAL_CHR_MTX_DIR = paste0(GLOBAL_DATA_DIR, "individual_chromosome_matrices/")
