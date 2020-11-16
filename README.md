@@ -6,6 +6,13 @@ The following instructions will perform panel discovery optimized for assessing 
 
 ## step 0: preliminary setup
 
+### 0.0: download dependencies
+This repository uses the following R packages as dependences
+- PRROC
+- pROC
+- foreach
+- doParallel
+
 ### 0.1: download the Signature Estimation repository
 Run the following command to download the repository:
 ``` 
