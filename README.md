@@ -52,7 +52,9 @@ Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter1 -o 2 -w 250
 Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter2 -o 2 -w 250
 Rscript run_10k_panel_script.R -s 2 -t EXAMPLE_EXPERIMENT_iter3 -o 2 -w 250
 ```
-Here, `-t` gives the file tag, which is the same file tag as in the previous step but appended with `_iter<i>` where `<i>` ranges from 1 to the `-n` argument given in the previous step. The `-o` argument selects one of the two parametrizations of alpha shown in the paper -- `-o 1` gives alpha=1, `-o 2` gives alpha=0.5 (the latter is the recommended setting). The `-w` argument gives the number of windows in the panel. In the paper, we use 250 windows in our primary experiments.
+The `-s` argument gives the signature that this ScalpelSig panel is optimized for. Here we just give the commands for finding a panel optimized for Signature 2. To run the experiment for all signatures examined in the paper, you would need to additionally run the three commands with `-s 3`, `-s 8`, `-s 13`, `-s 18`, and `-s 30`, but that would take quite awhile without the use of distributed computing. 
+
+The `-t` argument gives the file tag, which is the same file tag as in the previous step but appended with `_iter<i>` where `<i>` ranges from 1 to the `-n` argument given in the previous step. The `-o` argument selects one of the two parametrizations of alpha shown in the paper -- `-o 1` gives alpha=1, `-o 2` gives alpha=0.5 (the latter is the recommended setting). The `-w` argument gives the number of windows in the panel. In the paper, we use 250 windows in our primary experiments.
 
 ## step 3: find mutations in panel windows
 This step reads the panel windows discovered in the previous step and records the mutation category counts contained inside.
