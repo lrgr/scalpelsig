@@ -78,3 +78,21 @@ This will list the files in the results directory. Select the file with the desi
 >save_summary_df( paste0(GLOBAL_SCRIPT_OUT, ls[[1]]) )
 ```
 
+This concludes the experiment.
+
+# Outputs of ScalpelSig
+
+The results of evaluation for the experiment above will be stored at `scalpelsig/out/SCRIPT_OUTS/SUMMARY_panel_results_df_EXAMPLE_OUTPUT_<timestamp>.tsv`. The columns of this summary table can be read as follows:
+
+Signature - the signature for which the ScalpelSig panels are optimized
+Obj1.R.Spearman - mean Spearman's rank correlation between panel exposures and whole-genome exposures across trials (ScalpelSig with alpha=1)
+Obj2.R.Spearman - mean Spearman's rank correlation between panel exposures and whole-genome exposures across trials (ScalpelSig with alpha=0.5)
+MSK.R.Spearman - mean Spearman's rank correlation between panel exposures and whole-genome exposures across trials (MSK-IMPACT panel)
+WES.R.Spearman - mean Spearman's rank correlation between whole exome exposures and whole-genome exposures across trials (whole exome sequencing)
+Obj1.AUPR - mean AUPR for the binary classification task of distinguishing active from inactive samples given panel exposures across trials (ScalpelSig with alpha=1)
+Obj2.AUPR - mean AUPR for the binary classification task of distinguishing active from inactive samples given panel exposures across trials (ScalpelSig with alpha=0.5)
+MSK.AUPR - mean AUPR for the binary classification task of distinguishing active from inactive samples given panel exposures across trials (MSK-IMPACT panel)
+WES.AUPR - mean AUPR for the binary classification task of distinguishing active from inactive samples given whole exome exposures across trials (whole exome sequencing)
+Percent.Active - the percentage of samples that are in the 'active' class for this signature
+
+The genome windows in the ScalpelSig panel for a given run of the experiment can be found at `scalpelsig/out/SCRIPT_OUTS/PANEL_WINDOWS/`. The windows are given as strings delimited by an underscore, denoting the chromosome, the start coordinate, and the end coordinate of each window in the panel.
