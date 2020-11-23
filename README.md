@@ -1,4 +1,4 @@
-# NOTE TO REVIEWERS (November 15, 2020):
+# NOTE TO REVIEWERS (November 23, 2020):
 This repository is not in its final form. Below we have supplied steps to replicate the primary experiments performed in our manuscript. At the moment we supply a .zip file containing preprocessed data for ease of use, since there are a few time-consuming initial steps required to run the workflow from scratch. We plan to supply additional documentation to facilitate replicating the remaining experiments, as well as running ScalpelSig on new data, in the coming weeks. Please pardon our dust while we continue to make usability improvements.
 
 # example ScalpelSig workflow
