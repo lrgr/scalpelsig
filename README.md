@@ -46,7 +46,7 @@ Download preprocessed versions of the cohort of 560 breast cancer genomes, as we
 
 https://drive.google.com/file/d/1_55AmfdW445X34_HMHWKFEfuD4fdyHXl/view?usp=sharing
 
-Unzip this file in the same directory as ScalpelSig.
+Unzip this file to a folder called `data/`, and place it in the same directory as the other ScalpelSig files.
 
 ## step 1: initialize test and train sets
 Now we are ready to begin running the experiments. 
