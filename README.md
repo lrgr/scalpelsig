@@ -42,7 +42,11 @@ GLOBAL_PROJECT_DIR = "path/to/scalpelsig_repo/"
 ```
 
 ### 0.3: download and unzip data
-UPDATE THIS TEXT
+Download preprocessed versions of the cohort of 560 breast cancer genomes, as well as other auxilliary data for the example experiment, from the following link:
+
+https://drive.google.com/file/d/1_55AmfdW445X34_HMHWKFEfuD4fdyHXl/view?usp=sharing
+
+Unzip this file in the same directory as ScalpelSig.
 
 ## step 1: initialize test and train sets
 Now we are ready to begin running the experiments. 
