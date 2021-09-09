@@ -1,5 +1,5 @@
 # Introduction
-ScalpelSig is a computational method for constructing genomic panels optimized for the task of detecting mutational signature activity. In this repository we provide the code to run ScalpelSig, as well as online supplementary materials for our manuscript which will be presented at RECOMB 2021. We demonstrate an example run of our workflow below.
+ScalpelSig is a computational method for constructing genomic panels optimized for the task of detecting mutational signature activity. In this repository we provide the code to run ScalpelSig, as well as [online supplementary materials](https://github.com/lrgr/scalpelsig/blob/main/ScalpelSig%20Supplement.pdf) for our manuscript which will be presented at RECOMB 2021. We demonstrate an example run of our workflow below.
 
 # example ScalpelSig workflow
 The following instructions will perform panel discovery optimized for assessing the activity of a given signature examined in our paper (i.e. Signatures 2, 3, 8, 13, 18, 30), and evaluate the panel using held out data. The train and test data are taken from a publicly available cohort of 560 breast cancer genomes.
